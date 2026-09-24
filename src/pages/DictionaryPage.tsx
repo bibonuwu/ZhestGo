@@ -3,7 +3,7 @@ import { GestureVisual } from '../components/GestureVisual';
 import { Icon } from '../components/Icon';
 import { describeGesture } from '../data/gestureText';
 import { CATEGORIES, type CategoryId } from '../data/vocabulary';
-import { capitalize, useAllWords, type AnyWord } from '../data/words';
+import { capitalize, glossOf, matchesQuery, useAllWords, type AnyWord } from '../data/words';
 import { useT } from '../i18n';
 import { speakText } from '../lib/phrase';
 import { useSession } from '../store/session';
@@ -28,7 +28,7 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
       <header className="word-card__head">
         <div>
           <h3 lang="kk">{title}</h3>
-          <p className="word-card__ru">{word.ru}</p>
+          <p className="word-card__ru">{glossOf(word, lang)}</p>
         </div>
         {sampleCount > 0 && (
           <span className="badge badge--trained" title={t('dict.trained', { n: sampleCount })}>
@@ -83,11 +83,7 @@ export function DictionaryPage() {
 
   const visible = useMemo(() => {
     const q = deferredQuery.trim().toLocaleLowerCase();
-    return words.filter(
-      (w) =>
-        (filter === 'all' || w.category === filter) &&
-        (!q || w.kk.toLocaleLowerCase().includes(q) || w.ru.toLocaleLowerCase().includes(q)),
-    );
+    return words.filter((w) => (filter === 'all' || w.category === filter) && (!q || matchesQuery(w, q)));
   }, [words, filter, deferredQuery]);
 
   const filters: Array<{ id: Filter; label: string; icon?: string }> = [

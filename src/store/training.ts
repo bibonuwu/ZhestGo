@@ -15,17 +15,33 @@ export interface TrainingExport {
   userWords: UserWord[];
 }
 
+/** One recording made during this visit. Kept in memory only, so it can be shown back and undone. */
+export interface Take {
+  id: string;
+  wordId: string;
+  /** The same arrays that went into `samples`, so the take can be removed again. */
+  vectors: number[][];
+  /** Still frame with the hand's path drawn on it (JPEG data URL). */
+  thumb: string | null;
+  /** Share of recorded frames where the hand was visible, 0…1. */
+  coverage: number;
+}
+
 const STORAGE_KEY = 'qoldau.training.v1';
 const MAX_SAMPLES_PER_WORD = 150;
+const MAX_TAKES = 60;
 
 interface TrainingStore {
   loaded: boolean;
   samples: SampleSet;
   userWords: UserWord[];
+  takes: Take[];
   load: () => Promise<void>;
   addSamples: (wordId: string, vectors: number[][]) => void;
+  addTake: (wordId: string, vectors: number[][], meta: Pick<Take, 'thumb' | 'coverage'>) => void;
+  removeTake: (id: string) => void;
   clearWord: (wordId: string) => void;
-  addUserWord: (kk: string, ru: string) => string;
+  addUserWord: (kk: string) => string;
   deleteUserWord: (id: string) => void;
   exportData: () => TrainingExport;
   /** Merges an exported file; returns how many words received samples. */
@@ -65,6 +81,7 @@ export const useTraining = create<TrainingStore>((set, get) => {
     loaded: false,
     samples: {},
     userWords: [],
+    takes: [],
 
     load: async () => {
       try {
@@ -84,22 +101,40 @@ export const useTraining = create<TrainingStore>((set, get) => {
       save();
     },
 
-    clearWord: (wordId) => {
-      const { [wordId]: _removed, ...rest } = get().samples;
-      set({ samples: rest });
+    addTake: (wordId, vectors, meta) => {
+      const valid = vectors.filter(isVector);
+      if (!valid.length) return;
+      get().addSamples(wordId, valid);
+      const id = `take_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      set({ takes: [...get().takes, { id, wordId, vectors: valid, ...meta }].slice(-MAX_TAKES) });
+    },
+
+    removeTake: (id) => {
+      const take = get().takes.find((t) => t.id === id);
+      if (!take) return;
+      const drop = new Set(take.vectors);
+      const { [take.wordId]: current = [], ...rest } = get().samples;
+      const kept = current.filter((v) => !drop.has(v));
+      set({ samples: kept.length ? { ...rest, [take.wordId]: kept } : rest, takes: get().takes.filter((t) => t.id !== id) });
       save();
     },
 
-    addUserWord: (kk, ru) => {
+    clearWord: (wordId) => {
+      const { [wordId]: _removed, ...rest } = get().samples;
+      set({ samples: rest, takes: get().takes.filter((t) => t.wordId !== wordId) });
+      save();
+    },
+
+    addUserWord: (kk) => {
       const id = `user_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-      set({ userWords: [...get().userWords, { id, kk: kk.trim().toLocaleLowerCase('kk'), ru: ru.trim() }] });
+      set({ userWords: [...get().userWords, { id, kk: kk.trim().toLocaleLowerCase('kk'), ru: '' }] });
       save();
       return id;
     },
 
     deleteUserWord: (id) => {
       const { [id]: _removed, ...rest } = get().samples;
-      set({ userWords: get().userWords.filter((w) => w.id !== id), samples: rest });
+      set({ userWords: get().userWords.filter((w) => w.id !== id), samples: rest, takes: get().takes.filter((t) => t.wordId !== id) });
       save();
     },
 
@@ -121,7 +156,7 @@ export const useTraining = create<TrainingStore>((set, get) => {
     },
 
     resetAll: () => {
-      set({ samples: {}, userWords: [] });
+      set({ samples: {}, userWords: [], takes: [] });
       save();
     },
   };

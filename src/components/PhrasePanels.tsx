@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { capitalize, lookupWord, type AnyWord } from '../data/words';
-import { useT } from '../i18n';
+import { capitalize, glossOf, lookupWord, type AnyWord } from '../data/words';
+import { LOCALES, useT } from '../i18n';
 import { QUICK_PHRASES, buildPredictor, frequentPhrases } from '../lang/predict';
 import { composeLocal } from '../lib/compose';
 import { finalizeSentence, repeatPhrase, sayPhrase, speakText } from '../lib/phrase';
@@ -202,7 +202,7 @@ export function QuickPhrasesPanel() {
     const seen = new Set(frequent.map((p) => p.text));
     return QUICK_PHRASES.map((ids) => {
       const words = wordsOf(ids);
-      return { ids, text: composeLocal(words), gloss: words.map((w) => (lang === 'ru' ? w.ru : w.kk)).join(' · ') };
+      return { ids, text: composeLocal(words), gloss: words.map((w) => (lang === 'kk' ? w.kk : glossOf(w, lang))).join(' · ') };
     }).filter((p) => !seen.has(p.text));
   }, [frequent, lang]);
 
@@ -232,7 +232,7 @@ export function HistoryPanel() {
   const lang = useSettings((s) => s.lang);
   const history = useSession((s) => s.history);
   const clearHistory = useSession((s) => s.clearHistory);
-  const time = new Intl.DateTimeFormat(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const time = new Intl.DateTimeFormat(LOCALES[lang], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <section className="card history" aria-labelledby="history-title">

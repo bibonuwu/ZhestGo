@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   DIRECTION_LABELS,
   LOCATION_SHORT,
@@ -6,7 +6,7 @@ import {
   SHAPE_SHORT,
   type Lang,
 } from '../data/gestureText';
-import { capitalize, lookupWord } from '../data/words';
+import { capitalize, glossOf, lookupWord } from '../data/words';
 import type { Candidate } from '../gesture/recognizer';
 import type { Direction, HandShape, Location, MotionState, Relation } from '../gesture/types';
 import { useCamera } from '../hooks/useCamera';
@@ -52,7 +52,7 @@ function toLive(f: EngineFrame): LiveInfo {
 
 const RING = 2 * Math.PI * 17;
 
-function CandidatePill({ candidate, t }: { candidate: Candidate; t: Translate }) {
+function CandidatePill({ candidate, lang, t }: { candidate: Candidate; lang: Lang; t: Translate }) {
   const userWords = useTraining((s) => s.userWords);
   const word = lookupWord(candidate.wordId, userWords);
   if (!word) return null;
@@ -67,7 +67,7 @@ function CandidatePill({ candidate, t }: { candidate: Candidate; t: Translate })
       <div className="candidate__text">
         <strong lang="kk">{capitalize(word.kk)}</strong>
         <span>
-          {word.ru}
+          {glossOf(word, lang)}
           {candidate.blocked && ` · ${t('live.added')}`}
           {candidate.source === 'custom' && ` · ${t('live.custom')}`}
         </span>
@@ -124,7 +124,17 @@ function LivePanel({ live, lang, t }: { live: LiveInfo; lang: Lang; t: Translate
   );
 }
 
-export function CameraStage({ onFrame }: { onFrame?: (frame: EngineFrame) => void }) {
+interface CameraStageProps {
+  onFrame?: (frame: EngineFrame) => void;
+  /** Lets the page read the video (e.g. to take a still frame). */
+  videoRef?: RefObject<HTMLVideoElement | null>;
+  /** Extra layers drawn over the video, under the camera's own screens. */
+  overlay?: ReactNode;
+  /** Hide the recognised-word pill (e.g. while recording a take). */
+  hideCandidate?: boolean;
+}
+
+export function CameraStage({ onFrame, videoRef: outerVideoRef, overlay, hideCandidate = false }: CameraStageProps) {
   const t = useT();
   const lang = useSettings((s) => s.lang);
   const cameraId = useSettings((s) => s.cameraId);
@@ -133,7 +143,8 @@ export function CameraStage({ onFrame }: { onFrame?: (frame: EngineFrame) => voi
   const cameraOn = useUi((s) => s.cameraOn);
   const setCameraOn = useUi((s) => s.setCameraOn);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const ownVideoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = outerVideoRef ?? ownVideoRef;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const camera = useCamera(videoRef, cameraOn, cameraId);
 
@@ -178,6 +189,7 @@ export function CameraStage({ onFrame }: { onFrame?: (frame: EngineFrame) => voi
       >
         <video ref={videoRef} className="viewport__video" playsInline muted />
         <canvas ref={canvasRef} className="viewport__canvas" />
+        {overlay}
 
         {!cameraOn && (
           <div className="viewport__screen">
@@ -221,7 +233,7 @@ export function CameraStage({ onFrame }: { onFrame?: (frame: EngineFrame) => voi
               {live.hands === 0 && <span className="chip-status chip-status--warn">{t('camera.noHands')}</span>}
               {live.hands > 0 && !live.face && <span className="chip-status chip-status--warn">{t('camera.noFace')}</span>}
             </div>
-            {live.candidate && <CandidatePill candidate={live.candidate} t={t} />}
+            {live.candidate && !hideCandidate && <CandidatePill candidate={live.candidate} lang={lang} t={t} />}
           </>
         )}
 

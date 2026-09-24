@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bestMatch, specsConflict } from '../gesture/matcher';
 import { HAND_SHAPES, type Direction, type Observation, type Relation, type SpecLocation } from '../gesture/types';
+import { LANGS } from './gestureText';
 import { CATEGORIES, VOCABULARY } from './vocabulary';
 
 const DIRS: Direction[] = ['up', 'down', 'side', 'forward'];
@@ -14,6 +15,13 @@ describe('vocabulary', () => {
   it('has unique ids and unique Kazakh words', () => {
     expect(new Set(VOCABULARY.map((w) => w.id)).size).toBe(VOCABULARY.length);
     expect(new Set(VOCABULARY.map((w) => w.kk)).size).toBe(VOCABULARY.length);
+  });
+
+  it('is translated into every interface language', () => {
+    for (const w of VOCABULARY) {
+      expect([w.kk, w.ru, w.en].every((s) => s.trim())).toBe(true);
+      if (w.hint) expect(LANGS.every((lang) => w.hint?.[lang].trim())).toBe(true);
+    }
   });
 
   it('uses only known shapes and categories', () => {

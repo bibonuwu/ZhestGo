@@ -1,4 +1,5 @@
-import { useT, type MessageKey } from '../i18n';
+import { LANGS } from '../data/gestureText';
+import { LANG_NAMES, LANG_SHORT, useT, type MessageKey } from '../i18n';
 import { useSettings } from '../store/settings';
 import { useServerStatus } from '../store/status';
 import { useUi } from '../store/ui';
@@ -84,12 +85,11 @@ export function Header({ page }: { page: Page }) {
           </button>
         )}
         <div className="lang-switch" role="group" aria-label={t('settings.language')}>
-          <button aria-pressed={lang === 'kk'} onClick={() => update({ lang: 'kk' })}>
-            ҚАЗ
-          </button>
-          <button aria-pressed={lang === 'ru'} onClick={() => update({ lang: 'ru' })}>
-            РУС
-          </button>
+          {LANGS.map((l) => (
+            <button key={l} lang={l} aria-pressed={lang === l} onClick={() => update({ lang: l })} title={LANG_NAMES[l]}>
+              {LANG_SHORT[l]}
+            </button>
+          ))}
         </div>
       </div>
     </header>

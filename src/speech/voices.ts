@@ -6,6 +6,7 @@
 import ortWasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
 import phonemizerDataUrl from '@diffusionstudio/piper-wasm/build/piper_phonemize.data?url';
 import phonemizerWasmUrl from '@diffusionstudio/piper-wasm/build/piper_phonemize.wasm?url';
+import type { Localized } from '../data/vocabulary';
 import { VOICE_CACHE } from './voiceCache';
 
 export { VOICE_CACHE };
@@ -13,9 +14,9 @@ const HF = 'https://huggingface.co/rhasspy/piper-voices/resolve/main';
 
 export type VoiceId = 'kk_KZ-raya-x_low' | 'kk_KZ-iseke-x_low';
 
-export const VOICES: Record<VoiceId, { label: { kk: string; ru: string }; path: string }> = {
-  'kk_KZ-raya-x_low': { label: { kk: 'Рая — әйел дауысы', ru: 'Рая — женский голос' }, path: 'kk/kk_KZ/raya/x_low' },
-  'kk_KZ-iseke-x_low': { label: { kk: 'Исеке — ер дауысы', ru: 'Исеке — мужской голос' }, path: 'kk/kk_KZ/iseke/x_low' },
+export const VOICES: Record<VoiceId, { label: Localized; path: string }> = {
+  'kk_KZ-raya-x_low': { label: { kk: 'Рая — әйел дауысы', ru: 'Рая — женский голос', en: 'Raya — female voice' }, path: 'kk/kk_KZ/raya/x_low' },
+  'kk_KZ-iseke-x_low': { label: { kk: 'Исеке — ер дауысы', ru: 'Исеке — мужской голос', en: 'Iseke — male voice' }, path: 'kk/kk_KZ/iseke/x_low' },
 };
 
 export interface VoiceAsset {

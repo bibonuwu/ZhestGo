@@ -20,12 +20,12 @@ const lines = [
 let n = 0;
 for (const category of CATEGORIES) {
   const words = VOCABULARY.filter((w) => w.category === category.id);
-  lines.push(`## ${category.icon} ${category.label.kk} / ${category.label.ru}`, '');
-  lines.push('| № | Қазақша | Русский | Жест | Подсказка |', '|---|---|---|---|---|');
+  lines.push(`## ${category.icon} ${category.label.kk} / ${category.label.ru} / ${category.label.en}`, '');
+  lines.push('| № | Қазақша | Русский | English | Жест | Подсказка |', '|---|---|---|---|---|---|');
   for (const w of words) {
     n++;
     const kk = cap(w.kk) + (w.question ? '?' : '');
-    lines.push(`| ${n} | **${kk}** | ${w.ru} | ${describeGesture(w.gesture, 'ru')} | ${w.hint?.ru ?? ''} |`);
+    lines.push(`| ${n} | **${kk}** | ${w.ru} | ${w.en} | ${describeGesture(w.gesture, 'ru')} | ${w.hint?.ru ?? ''} |`);
   }
   lines.push('');
 }

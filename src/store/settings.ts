@@ -34,11 +34,16 @@ export interface Settings {
   showDebug: boolean;
   mirror: boolean;
   cameraId: string;
+  /** Training: how many takes one press of “Record” makes. */
+  trainSeries: number;
+  /** Training: short beeps for the countdown and the start/end of a take. */
+  trainBeeps: boolean;
 }
 
 const browserLang = (): Lang => {
   try {
-    return navigator.language?.toLowerCase().startsWith('ru') ? 'ru' : 'kk';
+    const code = navigator.language?.toLowerCase().slice(0, 2);
+    return code === 'ru' || code === 'en' ? code : 'kk';
   } catch {
     return 'kk';
   }
@@ -54,7 +59,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pauseMs: 2500,
   speakWords: false,
   useAi: true,
-  engine: 'auto',
+  engine: 'browser',
   voiceId: 'kk_KZ-raya-x_low',
   voiceURI: '',
   autoLearn: true,
@@ -64,6 +69,8 @@ export const DEFAULT_SETTINGS: Settings = {
   showDebug: true,
   mirror: true,
   cameraId: '',
+  trainSeries: 3,
+  trainBeeps: true,
 };
 
 interface SettingsStore extends Settings {
@@ -80,8 +87,14 @@ export const useSettings = create<SettingsStore>()(
     }),
     {
       name: 'qoldau.settings',
-      version: 1,
+      version: 2,
       partialize: ({ update: _update, reset: _reset, ...settings }) => settings,
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<Settings>;
+        // v2: the browser voice became the default speech engine.
+        if (version < 2 && state.engine === 'auto') state.engine = 'browser';
+        return state as SettingsStore;
+      },
     },
   ),
 );
