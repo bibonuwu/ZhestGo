@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Icon, type IconName } from '../components/Icon';
+import { PageHead } from '../components/PageHead';
 import { useVideoDevices } from '../hooks/useCamera';
 import { LANGS } from '../data/gestureText';
 import { LANG_NAMES, LOCALES, useT, type MessageKey, type Translate } from '../i18n';
@@ -789,12 +790,7 @@ export function SettingsPage() {
 
   return (
     <div className="page settings">
-      <header className="settings__head">
-        <h1>{t('nav.settings')}</h1>
-        <p>
-          <Icon name="check" size={15} /> {t('settings.subtitle')}
-        </p>
-      </header>
+      <PageHead icon="sliders" eyebrow={t('page.settings.eyebrow')} title={t('nav.settings')} sub={t('settings.subtitle')} />
 
       <div className="settings__layout">
         <nav ref={navRef} className="settings__nav" aria-label={t('settings.sections')}>

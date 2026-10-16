@@ -1,7 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { AccountButton, LangSwitch, Logo } from '../components/Header';
 import { Icon, type IconName } from '../components/Icon';
-import { Landscape } from '../components/Landscape';
 import { LeaderboardCard, useLiveLeaderboard } from '../components/Leaderboard';
 import { TelegramLink } from '../components/DonateDialog';
 import { AUTHORS } from '../data/authors';
@@ -9,7 +8,7 @@ import { DONATE, telegramUrl } from '../data/donate';
 import { SIGN_BY_WORD, SIGNS, SIGNS_BY_ID } from '../data/signs';
 import { capitalize } from '../data/words';
 import { LOCALES, useT, type MessageKey } from '../i18n';
-import { signPoster, signVideo } from '../lib/media';
+import { publicUrl, signPoster, signVideo } from '../lib/media';
 import { useLearn } from '../store/learn';
 import { useSettings } from '../store/settings';
 import { useUi } from '../store/ui';
@@ -19,20 +18,60 @@ const HERO_SIGNS = ['salem', 'otbasy', 'dos', 'zhaksy', 'ana', 'kitap'];
 const CAROUSEL = ['salem', 'ana', 'dos', 'mysyk', 'kun', 'otbasy', 'kitap', 'zhaksy', 'ui', 'kus'];
 const RAIL = SIGNS.filter((_, i) => i % 3 === 0).map((s) => s.id);
 
+const HERO_WORDS = HERO_SIGNS.map((id) => SIGNS_BY_ID.get(id)?.kk ?? id);
+/** The video card and the leader chip beside the headline only fit on wide screens (see site.css). */
+const WIDE_HERO = '(min-width: 1241px)';
+
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function useMedia(query: string): boolean {
+  const [matches, setMatches] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(query).matches);
+  useEffect(() => {
+    const list = matchMedia(query);
+    const update = () => setMatches(list.matches);
+    update();
+    list.addEventListener('change', update);
+    return () => list.removeEventListener('change', update);
+  }, [query]);
+  return matches;
+}
+
+/** Calls back when the element comes on screen or leaves it. */
+function useOnScreen(ref: RefObject<HTMLElement | null>, onChange: (visible: boolean) => void) {
+  const callback = useRef(onChange);
+  useLayoutEffect(() => {
+    callback.current = onChange;
+  });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => callback.current(entry.isIntersecting), { rootMargin: '120px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+}
+
+/**
+ * Looping decorations stand still while their block is off screen (.is-offscreen
+ * in site.css): otherwise the phone keeps drawing them while the visitor reads on.
+ */
+function usePauseOffscreen(ref: RefObject<HTMLElement | null>) {
+  useOnScreen(ref, (visible) => ref.current?.classList.toggle('is-offscreen', !visible));
+}
 const gloss = (id: string, lang: string) => {
   const s = SIGNS_BY_ID.get(id);
   return s ? (lang === 'en' ? s.en : s.ru) : '';
 };
 const openLesson = (id: string) => useUi.getState().openLesson(id, SIGNS.map((s) => s.id));
 
-/** Types a word, waits, erases it and moves on to the next one. */
-function useTypewriter(words: readonly string[]) {
+/** Types a word, waits, erases it and moves on to the next one; holds still while paused. */
+function useTypewriter(words: readonly string[], paused: boolean) {
   const [index, setIndex] = useState(0);
   const [length, setLength] = useState(0);
   const [erasing, setErasing] = useState(false);
 
   useEffect(() => {
+    if (paused) return;
     const word = words[index];
     if (reducedMotion()) {
       setLength(word.length);
@@ -49,9 +88,28 @@ function useTypewriter(words: readonly string[]) {
       } else setLength((n) => n + (erasing ? -1 : 1));
     }, delay);
     return () => clearTimeout(timer);
-  }, [words, index, length, erasing]);
+  }, [words, index, length, erasing, paused]);
 
   return { index, text: words[index].slice(0, length) };
+}
+
+/** The word typed in the headline. Only this part re-renders while typing. */
+function TypedWord({ paused, onWord }: { paused: boolean; onWord: (index: number) => void }) {
+  const lang = useSettings((s) => s.lang);
+  const [open, close] = lang === 'en' ? ['“', '”'] : ['«', '»'];
+  const { index, text } = useTypewriter(HERO_WORDS, paused);
+  useEffect(() => onWord(index), [index, onWord]);
+  return (
+    <span className="hero__word" lang="kk">
+      <span className="sr-only">{HERO_WORDS[index]}</span>
+      <span aria-hidden="true">
+        {open}
+        {text}
+        <i className="hero__caret" />
+        {close}
+      </span>
+    </span>
+  );
 }
 
 function HeroNav() {
@@ -123,33 +181,54 @@ function HeroTopChip() {
   );
 }
 
+/** The moving picture behind the headline; a still frame when motion is reduced. */
+function HeroVideo() {
+  const still = reducedMotion();
+  return (
+    <video
+      className="hero__video"
+      src={publicUrl('landing/hero.mp4')}
+      poster={publicUrl('landing/hero-poster.webp')}
+      autoPlay={!still}
+      muted
+      loop
+      playsInline
+      preload={still ? 'none' : 'auto'}
+      aria-hidden="true"
+    />
+  );
+}
+
 function Hero() {
   const t = useT();
-  const lang = useSettings((s) => s.lang);
-  const [open, close] = lang === 'en' ? ['“', '”'] : ['«', '»'];
-  const words = HERO_SIGNS.map((id) => SIGNS_BY_ID.get(id)?.kk ?? id);
-  const { index, text } = useTypewriter(words);
+  const wide = useMedia(WIDE_HERO);
+  const [index, setIndex] = useState(0);
+  const [onScreen, setOnScreen] = useState(true);
+  const ref = useRef<HTMLElement>(null);
+
+  // Scrolled past the hero: stop the video, the typing and the caret.
+  useOnScreen(ref, (visible) => {
+    setOnScreen(visible);
+    const hero = ref.current;
+    hero?.classList.toggle('is-offscreen', !visible);
+    const video = hero?.querySelector<HTMLVideoElement>('.hero__video');
+    if (!video || reducedMotion()) return;
+    if (visible) void video.play().catch(() => undefined);
+    else video.pause();
+  });
 
   return (
-    <section className="hero">
-      <Landscape />
+    <section className="hero" ref={ref}>
+      <HeroVideo />
       <div className="hero__shade" />
       <HeroNav />
-      <HeroTopChip />
-      <HeroSignCard id={HERO_SIGNS[index]} />
+      {wide && <HeroTopChip />}
+      {wide && <HeroSignCard id={HERO_SIGNS[index]} />}
       <div className="hero__content">
         <p className="eyebrow">{t('home.eyebrow')}</p>
         <h1>
           {t('home.title')}
-          <span className="hero__word" lang="kk">
-            <span className="sr-only">{words[index]}</span>
-            <span aria-hidden="true">
-              {open}
-              {text}
-              <i className="hero__caret" />
-              {close}
-            </span>
-          </span>
+          <TypedWord paused={!onScreen} onWord={setIndex} />
         </h1>
         <p className="hero__lead">{t('home.lead')}</p>
         <div className="hero__actions">
@@ -168,9 +247,9 @@ function Hero() {
             <span>{t('donate.button')}</span>
             <strong>{t('donate.hero.title')}</strong>
             <small>
-              <b>{t('donate.goal.videos')}</b>
-              <em>{t('donate.goal.server')}</em>
-              <em>{t('donate.goal.free')}</em>
+              <b>{t('donate.goal.charity')}</b>
+              <em>{t('donate.goal.school')}</em>
+              <em>{t('donate.goal.city')}</em>
             </small>
           </span>
           <span className="support-gift__via">{t('donate.hero.via')}</span>
@@ -218,6 +297,10 @@ function LessonsShowcase() {
   const lang = useSettings((s) => s.lang);
   const learned = useLearn((s) => s.learned);
   const rail = [...RAIL, ...RAIL];
+  const ringRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  usePauseOffscreen(ringRef);
+  usePauseOffscreen(railRef);
   return (
     <section className="showcase showcase--lessons" aria-labelledby="home-lessons">
       <div className="showcase__copy">
@@ -232,7 +315,7 @@ function LessonsShowcase() {
         </a>
       </div>
 
-      <div className="carousel" aria-hidden="true">
+      <div className="carousel" aria-hidden="true" ref={ringRef}>
         <div className="carousel__ring" style={{ '--quantity': CAROUSEL.length } as CSSProperties}>
           {CAROUSEL.map((id, i) => (
             <figure key={id} className="carousel__card" style={{ '--index': i, '--tone': i % 2 ? '233 65 150' : '84 226 192' } as CSSProperties}>
@@ -243,7 +326,7 @@ function LessonsShowcase() {
         </div>
       </div>
 
-      <div className="sign-rail">
+      <div className="sign-rail" ref={railRef}>
         <div>
           {rail.map((id, i) => {
             const sign = SIGNS_BY_ID.get(id)!;

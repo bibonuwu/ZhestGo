@@ -1,4 +1,4 @@
-import type { Localized } from './vocabulary';
+import type { Localized, TopicIcon } from './vocabulary';
 
 /**
  * Video lessons: 50 signs recorded by the Qoldau team.
@@ -23,15 +23,15 @@ export interface Sign {
   wordId?: string;
 }
 
-export const SIGN_TOPICS: ReadonlyArray<{ id: SignTopicId; label: Localized; icon: string }> = [
-  { id: 'basics', label: { kk: 'Негізгі', ru: 'Основное', en: 'Basics' }, icon: '👋' },
-  { id: 'people', label: { kk: 'Адамдар', ru: 'Люди', en: 'People' }, icon: '🧑' },
-  { id: 'time', label: { kk: 'Уақыт', ru: 'Время', en: 'Time' }, icon: '🕒' },
-  { id: 'animals', label: { kk: 'Жануарлар', ru: 'Животные', en: 'Animals' }, icon: '🐾' },
-  { id: 'colors', label: { kk: 'Түстер', ru: 'Цвета', en: 'Colours' }, icon: '🎨' },
-  { id: 'things', label: { kk: 'Заттар мен орындар', ru: 'Вещи и места', en: 'Things & places' }, icon: '🏠' },
-  { id: 'describe', label: { kk: 'Сипаттау', ru: 'Описание', en: 'Describing' }, icon: '📏' },
-  { id: 'actions', label: { kk: 'Әрекеттер', ru: 'Действия', en: 'Actions' }, icon: '🏃' },
+export const SIGN_TOPICS: ReadonlyArray<{ id: SignTopicId; label: Localized; icon: TopicIcon }> = [
+  { id: 'basics', label: { kk: 'Негізгі', ru: 'Основное', en: 'Basics' }, icon: 'hand' },
+  { id: 'people', label: { kk: 'Адамдар', ru: 'Люди', en: 'People' }, icon: 'users' },
+  { id: 'time', label: { kk: 'Уақыт', ru: 'Время', en: 'Time' }, icon: 'clock' },
+  { id: 'animals', label: { kk: 'Жануарлар', ru: 'Животные', en: 'Animals' }, icon: 'paw' },
+  { id: 'colors', label: { kk: 'Түстер', ru: 'Цвета', en: 'Colours' }, icon: 'palette' },
+  { id: 'things', label: { kk: 'Заттар мен орындар', ru: 'Вещи и места', en: 'Things & places' }, icon: 'home' },
+  { id: 'describe', label: { kk: 'Сипаттау', ru: 'Описание', en: 'Describing' }, icon: 'ruler' },
+  { id: 'actions', label: { kk: 'Әрекеттер', ru: 'Действия', en: 'Actions' }, icon: 'zap' },
 ];
 
 export const SIGNS: readonly Sign[] = [

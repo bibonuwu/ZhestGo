@@ -18,6 +18,15 @@ export interface EngineFrame extends RecognizerOutput {
 
 export type EngineStatus = 'idle' | 'loading' | 'ready' | 'error';
 
+/**
+ * Detection runs on the main thread. On a slow phone one detection can take
+ * longer than a video frame, and running it on every frame would freeze the
+ * page; so it runs at most as often as keeps it under this share of the time.
+ */
+const MAX_BUSY = 0.6;
+/** The first detections also compile the GPU programs: too slow to judge the device by. */
+const WARMUP_FRAMES = 3;
+
 interface Options {
   videoRef: RefObject<HTMLVideoElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -81,14 +90,18 @@ export function useGestureEngine({ videoRef, canvasRef, running, onFrame }: Opti
     let lastVideoTime = -1;
     let lastT = performance.now();
     let fps = 0;
+    let frames = 0;
+    let cost = 0;
+    let nextAt = 0;
 
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const video = videoRef.current;
       if (!video || video.readyState < 2 || !video.videoWidth || video.currentTime === lastVideoTime) return;
+      const t = performance.now();
+      if (t < nextAt) return;
       lastVideoTime = video.currentTime;
 
-      const t = performance.now();
       fps = fps ? fps * 0.9 + (1000 / Math.max(1, t - lastT)) * 0.1 : 30;
       lastT = t;
 
@@ -114,6 +127,10 @@ export function useGestureEngine({ videoRef, canvasRef, running, onFrame }: Opti
       }
 
       onFrameRef.current?.({ ...out, t, hands, face: frame.face, fps });
+
+      const spent = Math.min(250, performance.now() - t);
+      if (++frames > WARMUP_FRAMES) cost = cost ? cost * 0.8 + spent * 0.2 : spent;
+      nextAt = t + cost / MAX_BUSY;
     };
     raf = requestAnimationFrame(tick);
 

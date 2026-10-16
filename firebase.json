@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "koldau",
+    "site": "qoldau-ym",
     "public": "dist",
     "ignore": [
       "firebase.json",
@@ -27,6 +27,15 @@
       },
       {
         "source": "/signs/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000"
+          }
+        ]
+      },
+      {
+        "source": "/landing/**",
         "headers": [
           {
             "key": "Cache-Control",

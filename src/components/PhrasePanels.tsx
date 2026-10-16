@@ -55,7 +55,12 @@ export function SentencePanel() {
   return (
     <section className="card sentence" aria-labelledby="sentence-title">
       <header className="card__header">
-        <h2 id="sentence-title">{t('sentence.title')}</h2>
+        <h2 id="sentence-title" className="card__heading">
+          <span className="card__icon" aria-hidden="true">
+            <Icon name="message" size={16} />
+          </span>
+          {t('sentence.title')}
+        </h2>
         {items.length > 0 && <span className="count">{items.length}</span>}
       </header>
 
@@ -156,7 +161,12 @@ export function OutputPanel() {
   return (
     <section className="card output" aria-labelledby="output-title">
       <header className="card__header">
-        <h2 id="output-title">{t('output.title')}</h2>
+        <h2 id="output-title" className="card__heading">
+          <span className="card__icon card__icon--warm" aria-hidden="true">
+            <Icon name="speaker" size={16} />
+          </span>
+          {t('output.title')}
+        </h2>
         {output && !composing && (
           <span className={`badge${output.via === 'ai' ? ' badge--ai' : ''}`}>
             {output.via === 'ai' && <Icon name="sparkles" size={13} />}
@@ -209,12 +219,17 @@ export function QuickPhrasesPanel() {
   return (
     <section className="card quick" aria-labelledby="quick-title">
       <header className="card__header">
-        <h2 id="quick-title">{t('quick.title')}</h2>
+        <h2 id="quick-title" className="card__heading">
+          <span className="card__icon card__icon--violet" aria-hidden="true">
+            <Icon name="sparkles" size={16} />
+          </span>
+          {t('quick.title')}
+        </h2>
       </header>
       <div className="quick__grid">
         {frequent.map((p) => (
           <button key={p.id} className="quick__item quick__item--frequent" lang="kk" onClick={() => void repeatPhrase(p.text, p.words)} title={t('quick.frequent')}>
-            <span aria-hidden="true">★</span> {p.text}
+            <Icon name="star" size={13} /> {p.text}
           </button>
         ))}
         {quick.map((p) => (
@@ -237,7 +252,12 @@ export function HistoryPanel() {
   return (
     <section className="card history" aria-labelledby="history-title">
       <header className="card__header">
-        <h2 id="history-title">{t('history.title')}</h2>
+        <h2 id="history-title" className="card__heading">
+          <span className="card__icon card__icon--muted" aria-hidden="true">
+            <Icon name="replay" size={16} />
+          </span>
+          {t('history.title')}
+        </h2>
         {history.length > 0 && (
           <button className="btn btn--ghost btn--sm" onClick={clearHistory}>
             {t('history.clear')}

@@ -16,6 +16,15 @@ const visionFilesPresent = [
   'public/models/blaze_face_short_range.tflite',
 ].every((file) => existsSync(new URL(`./${file}`, import.meta.url)));
 
+/** The chunk of the full Firestore SDK (the lite one used elsewhere has no offline persistence). */
+function isFullFirestore(url: string): boolean {
+  try {
+    return readFileSync(new URL(`./dist/${url}`, import.meta.url), 'utf8').includes('IndexedDbPersistence');
+  } catch {
+    return false;
+  }
+}
+
 export default defineConfig(({ mode }) => {
   // `vite build --mode firebase` (npm run deploy): Firebase Hosting's free plan
   // has 10 GB of transfer a month, so the ~18 MB recognition models come from
@@ -58,7 +67,22 @@ export default defineConfig(({ mode }) => {
             '**/*.{js,css,html,svg,png,woff2}',
             ...(localVisionAssets ? ['mediapipe/wasm/vision_wasm_internal.{js,wasm}', 'models/*.{task,tflite}'] : []),
           ],
-          globIgnores: ['mediapipe/**/*nosimd*', 'mediapipe/**/*module*', 'voices/**'],
+          // Not cached ahead: font subsets the three languages never use, and (below) the full
+          // Firestore SDK of the chat (~0.5 MB, loaded when the chat opens, which needs the
+          // network anyway). On a phone's mobile data every precached byte competes with the
+          // page's own pictures.
+          globIgnores: [
+            'mediapipe/**/*nosimd*',
+            'mediapipe/**/*module*',
+            'voices/**',
+            'assets/inter-{greek,greek-ext,vietnamese,latin-ext}-*.woff2',
+          ],
+          manifestTransforms: [
+            async (entries) => ({
+              manifest: entries.filter((entry) => !(entry.url.endsWith('.js') && isFullFirestore(entry.url))),
+              warnings: [],
+            }),
+          ],
           runtimeCaching: [
             {
               // Recognition engine and models from the CDN (Firebase build).

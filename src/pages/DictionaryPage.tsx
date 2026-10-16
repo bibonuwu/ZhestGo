@@ -1,9 +1,10 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { GestureVisual } from '../components/GestureVisual';
 import { Icon } from '../components/Icon';
+import { PageHead } from '../components/PageHead';
 import { describeGesture } from '../data/gestureText';
 import { SIGN_BY_WORD, SIGNS } from '../data/signs';
-import { CATEGORIES, type CategoryId } from '../data/vocabulary';
+import { CATEGORIES, type CategoryId, type TopicIcon } from '../data/vocabulary';
 import { capitalize, glossOf, matchesQuery, useAllWords, type AnyWord } from '../data/words';
 import { useT } from '../i18n';
 import { signPoster } from '../lib/media';
@@ -20,61 +21,79 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
   const lang = useSettings((s) => s.lang);
   const title = capitalize(word.kk) + (word.question ? '?' : '');
   const sign = SIGN_BY_WORD.get(word.id);
+  const category = CATEGORIES.find((c) => c.id === word.category);
 
   const add = () => {
     useSession.getState().addWord(word.id, 'tap');
     useUi.getState().showToast(t('dict.added', { w: word.kk }));
   };
+  const watch = () => sign && useUi.getState().openLesson(sign.id, SIGNS.map((s) => s.id));
 
   return (
     <article className="word-card">
-      <header className="word-card__head">
-        <div>
-          <h3 lang="kk">{title}</h3>
-          <p className="word-card__ru">{glossOf(word, lang)}</p>
-        </div>
-        {sampleCount > 0 && (
-          <span className="badge badge--trained" title={t('dict.trained', { n: sampleCount })}>
-            <Icon name="check" size={12} /> {sampleCount}
-          </span>
+      <div className="word-card__top">
+        {sign && (
+          <button type="button" className="word-card__poster" onClick={watch} aria-label={`${t('learn.watch')}: ${word.kk}`}>
+            <img src={signPoster(sign.id)} alt="" loading="lazy" width={450} height={640} />
+            <span className="word-card__play" aria-hidden="true">
+              <Icon name="play" size={14} />
+            </span>
+          </button>
         )}
-      </header>
-      {sign && (
+        <div className="word-card__title">
+          <h3 lang="kk">{title}</h3>
+          <p className="word-card__gloss">{glossOf(word, lang)}</p>
+          <div className="word-card__tags">
+            {category && (
+              <span className="tag">
+                <Icon name={category.icon} size={12} /> {category.label[lang]}
+              </span>
+            )}
+            {sampleCount > 0 && (
+              <span className="tag tag--ok" title={t('dict.trained', { n: sampleCount })}>
+                <Icon name="check" size={12} /> {sampleCount}
+              </span>
+            )}
+          </div>
+          {sign && (
+            <button type="button" className="word-card__watch" onClick={watch}>
+              <Icon name="play" size={13} /> {t('learn.watch')}
+            </button>
+          )}
+        </div>
         <button
           type="button"
-          className="word-card__video"
-          onClick={() => useUi.getState().openLesson(sign.id, SIGNS.map((s) => s.id))}
-          aria-label={`${t('learn.watch')}: ${word.kk}`}
+          className="round-btn"
+          onClick={() => void speakText(title)}
+          title={t('dict.listen')}
+          aria-label={`${t('dict.listen')}: ${word.kk}`}
         >
-          <img src={signPoster(sign.id)} alt="" loading="lazy" width={450} height={640} />
-          <span>
-            <Icon name="play" size={14} /> {t('learn.watch')}
-          </span>
+          <Icon name="speaker" size={17} />
         </button>
-      )}
+      </div>
+
       {word.gesture ? (
-        <>
+        <div className="word-card__how">
+          <span className="label">{t('dict.how')}</span>
           <GestureVisual spec={word.gesture} lang={lang} />
           <p className="word-card__desc">{describeGesture(word.gesture, lang)}</p>
-        </>
+        </div>
       ) : (
         <p className="word-card__desc">{t('dict.customWord')}</p>
       )}
-      {word.hint && <p className="word-card__hint">{word.hint[lang]}</p>}
+      {word.hint && (
+        <p className="word-card__hint">
+          <Icon name="info" size={14} />
+          {word.hint[lang]}
+        </p>
+      )}
+
       <footer className="word-card__actions">
-        <button className="btn btn--sm" onClick={() => void speakText(title)} aria-label={`${t('dict.listen')}: ${word.kk}`}>
-          <Icon name="speaker" size={15} /> {t('dict.listen')}
-        </button>
-        <button className="btn btn--sm" onClick={add}>
+        <button type="button" className="btn btn--sm btn--soft" onClick={add}>
           <Icon name="plus" size={15} /> {t('dict.add')}
         </button>
-        <a
-          className="btn btn--sm btn--ghost btn--icon"
-          href={`#/train?word=${encodeURIComponent(word.id)}`}
-          title={t('dict.train')}
-          aria-label={`${t('dict.train')}: ${word.kk}`}
-        >
-          <Icon name="graduate" size={17} />
+        <a className="btn btn--sm btn--ghost" href={`#/train?word=${encodeURIComponent(word.id)}`} aria-label={`${t('dict.train')}: ${word.kk}`}>
+          <Icon name="graduate" size={16} /> {t('dict.train')}
         </a>
       </footer>
     </article>
@@ -103,22 +122,29 @@ export function DictionaryPage() {
     return words.filter((w) => (filter === 'all' || w.category === filter) && (!q || matchesQuery(w, q)));
   }, [words, filter, deferredQuery]);
 
-  const filters: Array<{ id: Filter; label: string; icon?: string }> = [
+  const filters: Array<{ id: Filter; label: string; icon?: TopicIcon }> = [
     { id: 'all', label: t('dict.all') },
     ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) => ({ id: c.id as Filter, label: c.label[lang], icon: c.icon })),
   ];
 
   return (
     <div className="page dictionary">
-      <div className="dictionary__toolbar">
+      <PageHead icon="book" eyebrow={t('page.dict.eyebrow', { n: words.length })} title={t('nav.dictionary')} sub={t('page.dict.sub')} />
+
+      <div className="toolbar">
         <label className="search">
           <Icon name="search" />
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('dict.search')} aria-label={t('dict.search')} />
+          {query && (
+            <button type="button" className="search__clear" onClick={() => setQuery('')} aria-label={t('sentence.clear')}>
+              <Icon name="x" size={15} />
+            </button>
+          )}
         </label>
         <div className="filters" role="group" aria-label={t('nav.dictionary')}>
           {filters.map((f) => (
             <button key={f.id} className={`filter${filter === f.id ? ' is-active' : ''}`} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-              {f.icon && <span aria-hidden="true">{f.icon}</span>}
+              {f.icon && <Icon name={f.icon} size={14} />}
               {f.label}
               <span className="filter__count">{counts.get(f.id) ?? 0}</span>
             </button>
@@ -126,10 +152,28 @@ export function DictionaryPage() {
         </div>
       </div>
 
-      <p className="notice">{t('dict.notice')}</p>
+      <p className="notice notice--info">
+        <Icon name="info" size={17} />
+        <span>{t('dict.notice')}</span>
+      </p>
 
       {visible.length === 0 ? (
-        <p className="empty empty--large">{t('dict.nothing')}</p>
+        <div className="empty-state">
+          <span className="empty-state__icon">
+            <Icon name="search" size={22} />
+          </span>
+          <p>{t('dict.nothing')}</p>
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => {
+              setQuery('');
+              setFilter('all');
+            }}
+          >
+            <Icon name="replay" size={15} /> {t('dict.all')}
+          </button>
+        </div>
       ) : (
         <div className="word-grid">
           {visible.map((w) => (

@@ -2,6 +2,12 @@ import { useEffect, useState, type RefObject } from 'react';
 
 export type CameraState = 'idle' | 'starting' | 'ready' | 'denied' | 'error' | 'unsupported';
 
+/**
+ * Phones and tablets ask for 640×480: the hand model looks at about 224×224
+ * anyway, and every extra pixel is copied to the GPU on every frame.
+ */
+const touchDevice = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+
 export function useCamera(videoRef: RefObject<HTMLVideoElement | null>, enabled: boolean, deviceId: string) {
   const [state, setState] = useState<CameraState>('idle');
   const [aspect, setAspect] = useState(16 / 9);
@@ -26,8 +32,8 @@ export function useCamera(videoRef: RefObject<HTMLVideoElement | null>, enabled:
         audio: false,
         video: {
           ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user' }),
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: touchDevice() ? 640 : 1280 },
+          height: { ideal: touchDevice() ? 480 : 720 },
           frameRate: { ideal: 30 },
         },
       })

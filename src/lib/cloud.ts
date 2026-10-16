@@ -37,7 +37,7 @@ export interface Leaderboard {
   me: { rank: number | null; learned: number } | null;
 }
 
-/** An error with a short code the interface translates (see AuthDialog). */
+/** An error with a short code the interface translates (see pages/AuthPage.tsx). */
 export class CloudError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -149,7 +149,32 @@ export const logout = () =>
     await A.signOut(auth);
   });
 
-/** Deletes the profile (leaving the leaderboard), then the account itself. */
+/** Sends Firebase's password reset e-mail (Kazakh visitors get the Russian template). */
+export const resetPassword = (email: string, lang: 'kk' | 'ru' | 'en') =>
+  guard(async () => {
+    const { auth, A } = await firebase();
+    auth.languageCode = lang === 'en' ? 'en' : 'ru';
+    await A.sendPasswordResetEmail(auth, email.trim());
+  });
+
+/** The account's chat messages (see lib/chat.ts); only a signed-in author may delete them. */
+async function deleteChatMessages(uid: string) {
+  const { db, F } = await firebase();
+  try {
+    const mine = await F.getDocs(F.query(F.collection(db, 'chat'), F.where('uid', '==', uid)));
+    for (let i = 0; i < mine.docs.length; i += 400) {
+      const batch = F.writeBatch(db);
+      for (const d of mine.docs.slice(i, i + 400)) batch.delete(d.ref);
+      await batch.commit();
+    }
+    await F.deleteDoc(F.doc(db, 'chatMeta', uid));
+  } catch (err) {
+    // Without the chat rules deployed nobody could write there, so there is nothing to delete.
+    if ((err as { code?: string } | null)?.code !== 'permission-denied') throw err;
+  }
+}
+
+/** Deletes the chat messages and the profile (leaving the leaderboard), then the account itself. */
 export const deleteAccount = () =>
   guard(async () => {
     const { auth, db, A, F } = await firebase();
@@ -161,6 +186,7 @@ export const deleteAccount = () =>
       await A.signOut(auth);
       throw new CloudError('relogin');
     }
+    await deleteChatMessages(user.uid);
     await F.deleteDoc(F.doc(db, 'users', user.uid));
     await A.deleteUser(user);
   });

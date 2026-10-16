@@ -1,10 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { AuthDialog } from './components/AuthDialog';
+import { ChatWidget } from './components/ChatWidget';
 import { CookieBanner } from './components/CookieBanner';
 import { DonateDialog } from './components/DonateDialog';
 import { Header, type Page } from './components/Header';
 import { LessonDialog } from './components/LessonDialog';
 import { useT } from './i18n';
+import { AuthPage } from './pages/AuthPage';
 import { HomePage, SiteFooter } from './pages/HomePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { LearnPage } from './pages/LearnPage';
@@ -23,7 +24,7 @@ const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => (
 const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
-const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'leaderboard', 'train', 'settings', 'privacy'];
+const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'leaderboard', 'train', 'settings', 'privacy', 'login', 'register'];
 
 interface Route {
   page: Page;
@@ -66,7 +67,6 @@ function Dialogs() {
   return (
     <>
       {dialog === 'donate' && <DonateDialog onClose={closeDialog} />}
-      {(dialog === 'login' || dialog === 'register') && <AuthDialog mode={dialog} onClose={closeDialog} />}
       {lesson && <LessonDialog id={lesson} onClose={closeLesson} />}
     </>
   );
@@ -120,16 +120,18 @@ export function App() {
 
   const overlays = (
     <>
+      {route.page !== 'login' && route.page !== 'register' && <ChatWidget />}
       <Dialogs />
       <CookieBanner />
       <Toast />
     </>
   );
 
-  if (route.page === 'home') {
+  // Full-screen pages without the app header.
+  if (route.page === 'home' || route.page === 'login' || route.page === 'register') {
     return (
       <>
-        <HomePage />
+        {route.page === 'home' ? <HomePage /> : <AuthPage mode={route.page} />}
         {overlays}
       </>
     );

@@ -10,7 +10,17 @@ import { useUi } from '../store/ui';
 import { Icon, type IconName } from './Icon';
 import { Avatar } from './Leaderboard';
 
-export type Page = 'home' | 'translate' | 'dictionary' | 'learn' | 'leaderboard' | 'train' | 'settings' | 'privacy';
+export type Page =
+  | 'home'
+  | 'translate'
+  | 'dictionary'
+  | 'learn'
+  | 'leaderboard'
+  | 'train'
+  | 'settings'
+  | 'privacy'
+  | 'login'
+  | 'register';
 
 const TABS: Array<{ id: Page; label: MessageKey; icon: IconName }> = [
   { id: 'translate', label: 'nav.translate', icon: 'hand' },
@@ -74,11 +84,11 @@ export function AccountButton({ variant = 'app' }: { variant?: 'app' | 'hero' })
   if (!user) {
     return (
       <div className={`account account--${variant}`}>
-        <button type="button" className="account__login" onClick={() => useUi.getState().openDialog('login')}>
+        <button type="button" className="account__login" onClick={() => useUi.getState().goAuth('login')}>
           <Icon name="user" size={16} />
           <span>{t('account.login')}</span>
         </button>
-        <button type="button" className="account__register" onClick={() => useUi.getState().openDialog('register')}>
+        <button type="button" className="account__register" onClick={() => useUi.getState().goAuth('register')}>
           {t('account.register')}
         </button>
       </div>
@@ -102,7 +112,7 @@ export function AccountButton({ variant = 'app' }: { variant?: 'app' | 'hero' })
     } catch (err) {
       const relogin = err instanceof CloudError && err.code === 'relogin';
       useUi.getState().showToast(t(relogin ? 'auth.err.relogin' : 'auth.err.generic'));
-      if (relogin) useUi.getState().openDialog('login');
+      if (relogin) useUi.getState().goAuth('login');
     }
   };
 

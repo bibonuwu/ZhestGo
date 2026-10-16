@@ -1,9 +1,11 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Icon } from '../components/Icon';
+import { PageHead } from '../components/PageHead';
 import { SIGN_TOPICS, SIGNS, type Sign, type SignTopicId } from '../data/signs';
 import { capitalize } from '../data/words';
 import { useT } from '../i18n';
 import { signPoster, signVideo } from '../lib/media';
+import { makeRound } from '../lib/quiz';
 import { useAuth } from '../store/auth';
 import { useLearn } from '../store/learn';
 import { useSettings } from '../store/settings';
@@ -12,15 +14,6 @@ import { useUi } from '../store/ui';
 type Status = 'all' | 'todo' | 'done';
 
 const glossOf = (s: Sign, lang: string) => (lang === 'en' ? s.en : s.ru);
-
-function shuffle<T>(items: readonly T[]): T[] {
-  const a = [...items];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function SignCard({ sign, learned, onOpen }: { sign: Sign; learned: boolean; onOpen: () => void }) {
   const lang = useSettings((s) => s.lang);
@@ -53,14 +46,11 @@ function SignCard({ sign, learned, onOpen }: { sign: Sign; learned: boolean; onO
   );
 }
 
-function makeRound(learned: readonly string[]) {
-  const fresh = SIGNS.filter((s) => !learned.includes(s.id));
-  const pool = fresh.length ? fresh : SIGNS;
-  const answer = pool[Math.floor(Math.random() * pool.length)];
-  const others = shuffle(SIGNS.filter((s) => s.id !== answer.id)).slice(0, 3);
-  return { answer, options: shuffle([answer, ...others]) };
-}
-
+/**
+ * “Check yourself”: a video and four words. New signs are learned with a
+ * right answer; learned signs come back now and then, and a wrong answer
+ * returns a forgotten one to the lessons.
+ */
 function Quiz({ onClose }: { onClose: () => void }) {
   const t = useT();
   const lang = useSettings((s) => s.lang);
@@ -68,6 +58,7 @@ function Quiz({ onClose }: { onClose: () => void }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState({ right: 0, total: 0 });
   const correct = picked === round.answer.id;
+  const forgot = Boolean(picked) && !correct && round.review;
 
   const pick = (id: string) => {
     if (picked) return;
@@ -75,12 +66,17 @@ function Quiz({ onClose }: { onClose: () => void }) {
     const right = id === round.answer.id;
     setScore((s) => ({ right: s.right + (right ? 1 : 0), total: s.total + 1 }));
     if (right) useLearn.getState().mark(round.answer.id);
+    else if (round.review) useLearn.getState().unmark(round.answer.id);
   };
 
   const next = () => {
-    setRound(makeRound(useLearn.getState().learned));
+    setRound(makeRound(useLearn.getState().learned, round.answer.id));
     setPicked(null);
   };
+
+  const result = correct
+    ? t(round.review ? 'learn.quiz.remember' : 'learn.quiz.correct', { w: round.answer.kk })
+    : t(round.review ? 'learn.quiz.forgot' : 'learn.quiz.wrong', { w: round.answer.kk });
 
   return (
     <section className="quiz" aria-labelledby="quiz-title">
@@ -89,7 +85,10 @@ function Quiz({ onClose }: { onClose: () => void }) {
       </div>
       <div className="quiz__body">
         <header className="quiz__head">
-          <h2 id="quiz-title">{t('learn.quiz.title')}</h2>
+          <h2 id="quiz-title">
+            {t('learn.quiz.title')}
+            {round.review && <span className="quiz__tag">{t('learn.quiz.review')}</span>}
+          </h2>
           <button type="button" className="btn btn--sm btn--ghost" onClick={onClose}>
             <Icon name="x" size={16} /> {t('learn.quiz.close')}
           </button>
@@ -109,10 +108,15 @@ function Quiz({ onClose }: { onClose: () => void }) {
           {picked && (
             <p className={`quiz__result${correct ? ' is-right' : ' is-wrong'}`}>
               <Icon name={correct ? 'check' : 'x'} size={18} />
-              {t(correct ? 'learn.quiz.correct' : 'learn.quiz.wrong', { w: round.answer.kk })}
+              {result}
             </p>
           )}
           <span className="quiz__score">{t('learn.quiz.score', { n: score.right, total: score.total })}</span>
+          {forgot && (
+            <button type="button" className="btn" onClick={() => useUi.getState().openLesson(round.answer.id, [round.answer.id])}>
+              <Icon name="play" size={15} /> {t('learn.quiz.watch')}
+            </button>
+          )}
           {picked && (
             <button type="button" className="btn btn--primary" onClick={next}>
               {t('learn.quiz.next')} <Icon name="arrowRight" size={16} />
@@ -145,34 +149,44 @@ export function LearnPage() {
   );
   const percent = Math.round((learned.length / SIGNS.length) * 100);
   const open = (id: string) => useUi.getState().openLesson(id, visible.map((s) => s.id));
+  const todo = SIGNS.filter((s) => !learned.includes(s.id));
+  const next = todo[0];
+  const allDone = todo.length === 0;
 
   return (
     <div className="page learn">
-      <header className="page-hero">
-        <div>
-          <p className="eyebrow">{t('home.eyebrow')}</p>
-          <h1>{t('learn.title')}</h1>
-          <p>{t('learn.sub')}</p>
-        </div>
-        <div className="learn__progress">
-          <div className="progress-ring" style={{ '--p': percent } as CSSProperties} role="img" aria-label={t('learn.progress', { n: learned.length, total: SIGNS.length })}>
-            <strong>{learned.length}</strong>
-            <small>/ {SIGNS.length}</small>
+      <PageHead
+        icon="film"
+        eyebrow={t('home.eyebrow')}
+        title={t('learn.title')}
+        sub={t('learn.sub')}
+        aside={
+          <div className="learn-progress">
+            <div className="progress-ring" style={{ '--p': percent } as CSSProperties} role="img" aria-label={t('learn.progress', { n: learned.length, total: SIGNS.length })}>
+              <strong>{percent}%</strong>
+            </div>
+            <div className="learn-progress__body">
+              <strong>{allDone ? t('learn.allDone') : t('learn.progress', { n: learned.length, total: SIGNS.length })}</strong>
+              <div className="learn-progress__actions">
+                {next && (
+                  <button type="button" className="btn btn--primary btn--sm" onClick={() => useUi.getState().openLesson(next.id, todo.map((s) => s.id))}>
+                    <Icon name="play" size={15} /> {t('learn.continue')}: <span lang="kk">{capitalize(next.kk)}</span>
+                  </button>
+                )}
+                <button type="button" className={`btn btn--sm${quiz ? ' is-on' : ''}`} onClick={() => setQuiz((q) => !q)} aria-expanded={quiz}>
+                  <Icon name="quiz" size={16} /> {t('learn.quiz')}
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <strong>{learned.length === SIGNS.length ? t('learn.allDone') : t('learn.progress', { n: learned.length, total: SIGNS.length })}</strong>
-            <button type="button" className="btn btn--primary" onClick={() => setQuiz((q) => !q)} aria-expanded={quiz}>
-              <Icon name="quiz" size={17} /> {t('learn.quiz')}
-            </button>
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       {!user && available && (
         <div className="learn__guest">
           <Icon name="trophy" size={18} />
           <p>{t('learn.guest')}</p>
-          <button type="button" className="btn btn--sm btn--primary" onClick={() => useUi.getState().openDialog('register')}>
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => useUi.getState().goAuth('register')}>
             {t('account.register')}
           </button>
         </div>
@@ -180,15 +194,16 @@ export function LearnPage() {
 
       {quiz && <Quiz onClose={() => setQuiz(false)} />}
 
-      <div className="learn__filters">
-        <div className="segmented" role="group">
+      <div className="toolbar toolbar--learn">
+        <div className="segmented" role="group" aria-label={t('learn.title')}>
           {(['all', 'todo', 'done'] as const).map((s) => (
             <button key={s} type="button" className={status === s ? 'is-active' : ''} aria-pressed={status === s} onClick={() => setStatus(s)}>
               {t(s === 'all' ? 'learn.all' : s === 'todo' ? 'learn.todo' : 'learn.done')}
+              <span className="segmented__count">{s === 'all' ? SIGNS.length : s === 'todo' ? todo.length : learned.length}</span>
             </button>
           ))}
         </div>
-        <div className="filters" role="group">
+        <div className="filters" role="group" aria-label={t('nav.learn')}>
           <button type="button" className={`filter${topic === 'all' ? ' is-active' : ''}`} aria-pressed={topic === 'all'} onClick={() => setTopic('all')}>
             {t('learn.all')}
             <span className="filter__count">{SIGNS.length}</span>
@@ -201,7 +216,7 @@ export function LearnPage() {
               aria-pressed={topic === tp.id}
               onClick={() => setTopic(tp.id)}
             >
-              <span aria-hidden="true">{tp.icon}</span>
+              <Icon name={tp.icon} size={14} />
               {tp.label[lang]}
               <span className="filter__count">{SIGNS.filter((s) => s.topic === tp.id).length}</span>
             </button>
@@ -210,7 +225,12 @@ export function LearnPage() {
       </div>
 
       {visible.length === 0 ? (
-        <p className="empty empty--large">{t('learn.empty')}</p>
+        <div className="empty-state">
+          <span className="empty-state__icon">
+            <Icon name="film" size={22} />
+          </span>
+          <p>{t('learn.empty')}</p>
+        </div>
       ) : (
         <div className="sign-grid">
           {visible.map((s) => (

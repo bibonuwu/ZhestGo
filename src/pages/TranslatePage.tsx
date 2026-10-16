@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { CameraStage } from '../components/CameraStage';
+import { PageHead, Steps } from '../components/PageHead';
 import { HistoryPanel, OutputPanel, QuickPhrasesPanel, SentencePanel } from '../components/PhrasePanels';
 import { lookupWord } from '../data/words';
 import type { EngineFrame } from '../hooks/useGestureEngine';
+import { useT } from '../i18n';
 import { forgetGesture, rememberGesture } from '../lib/learning';
 import { finalizeSentence, speakText } from '../lib/phrase';
 import { warmUpOfflineVoice } from '../speech/piperClient';
 import { useSession } from '../store/session';
 import { useSettings } from '../store/settings';
+import { useUi } from '../store/ui';
 import { useVoice } from '../store/voice';
 
 /** How far back to look for the frames of a recognised gesture. */
@@ -16,7 +19,22 @@ const GESTURE_WINDOW_MS = 900;
 const isTyping = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
+/** Where the visitor is: camera off → signing → hands down to speak. */
+function HowTo() {
+  const t = useT();
+  const cameraOn = useUi((s) => s.cameraOn);
+  const signing = useSession((s) => s.tokens.length > 0);
+  return (
+    <Steps
+      label={t('page.translate.eyebrow')}
+      labels={[t('page.translate.step1'), t('page.translate.step2'), t('page.translate.step3')]}
+      done={[cameraOn, cameraOn && signing, false]}
+    />
+  );
+}
+
 export function TranslatePage() {
+  const t = useT();
   const recent = useRef<{ t: number; v: number[] }[]>([]);
 
   const onFrame = useCallback((f: EngineFrame) => {
@@ -87,14 +105,24 @@ export function TranslatePage() {
 
   return (
     <div className="page translate">
-      <div className="translate__stage">
-        <CameraStage onFrame={onFrame} />
-        <QuickPhrasesPanel />
-      </div>
-      <div className="translate__side">
-        <SentencePanel />
-        <OutputPanel />
-        <HistoryPanel />
+      <PageHead
+        compact
+        icon="hand"
+        eyebrow={t('page.translate.eyebrow')}
+        title={t('nav.translate')}
+        sub={t('page.translate.sub')}
+        aside={<HowTo />}
+      />
+      <div className="translate__grid">
+        <div className="translate__stage">
+          <CameraStage onFrame={onFrame} />
+          <QuickPhrasesPanel />
+        </div>
+        <div className="translate__side">
+          <SentencePanel />
+          <OutputPanel />
+          <HistoryPanel />
+        </div>
       </div>
     </div>
   );

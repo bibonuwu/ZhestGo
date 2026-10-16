@@ -37,18 +37,24 @@ export interface WordEntry {
   alone?: string;
 }
 
-export const CATEGORIES: ReadonlyArray<{ id: CategoryId; label: Localized; icon: string }> = [
-  { id: 'greetings', label: { kk: 'Сәлемдесу', ru: 'Приветствие', en: 'Greetings' }, icon: '👋' },
-  { id: 'people', label: { kk: 'Адамдар', ru: 'Люди', en: 'People' }, icon: '🧑' },
-  { id: 'questions', label: { kk: 'Сұрақтар', ru: 'Вопросы', en: 'Questions' }, icon: '❓' },
-  { id: 'needs', label: { kk: 'Қажеттілік', ru: 'Нужды', en: 'Needs' }, icon: '🆘' },
-  { id: 'actions', label: { kk: 'Әрекеттер', ru: 'Действия', en: 'Actions' }, icon: '🏃' },
-  { id: 'feelings', label: { kk: 'Сезімдер', ru: 'Чувства', en: 'Feelings' }, icon: '💛' },
-  { id: 'time', label: { kk: 'Уақыт', ru: 'Время', en: 'Time' }, icon: '🕒' },
-  { id: 'places', label: { kk: 'Орындар', ru: 'Места', en: 'Places' }, icon: '🏠' },
-  { id: 'food', label: { kk: 'Тамақ', ru: 'Еда', en: 'Food' }, icon: '🍞' },
-  { id: 'describe', label: { kk: 'Сипаттау', ru: 'Описание', en: 'Describing' }, icon: '📏' },
-  { id: 'numbers', label: { kk: 'Сандар', ru: 'Числа', en: 'Numbers' }, icon: '🔢' },
+/**
+ * Icons of the word categories and lesson topics: names from components/Icon.tsx.
+ * (SVG, not emoji: phones load the colour emoji font slowly, and it looks different everywhere.)
+ */
+export type TopicIcon = 'hand' | 'users' | 'quiz' | 'lifebuoy' | 'zap' | 'heart' | 'clock' | 'home' | 'utensils' | 'ruler' | 'hash' | 'paw' | 'palette';
+
+export const CATEGORIES: ReadonlyArray<{ id: CategoryId; label: Localized; icon: TopicIcon }> = [
+  { id: 'greetings', label: { kk: 'Сәлемдесу', ru: 'Приветствие', en: 'Greetings' }, icon: 'hand' },
+  { id: 'people', label: { kk: 'Адамдар', ru: 'Люди', en: 'People' }, icon: 'users' },
+  { id: 'questions', label: { kk: 'Сұрақтар', ru: 'Вопросы', en: 'Questions' }, icon: 'quiz' },
+  { id: 'needs', label: { kk: 'Қажеттілік', ru: 'Нужды', en: 'Needs' }, icon: 'lifebuoy' },
+  { id: 'actions', label: { kk: 'Әрекеттер', ru: 'Действия', en: 'Actions' }, icon: 'zap' },
+  { id: 'feelings', label: { kk: 'Сезімдер', ru: 'Чувства', en: 'Feelings' }, icon: 'heart' },
+  { id: 'time', label: { kk: 'Уақыт', ru: 'Время', en: 'Time' }, icon: 'clock' },
+  { id: 'places', label: { kk: 'Орындар', ru: 'Места', en: 'Places' }, icon: 'home' },
+  { id: 'food', label: { kk: 'Тамақ', ru: 'Еда', en: 'Food' }, icon: 'utensils' },
+  { id: 'describe', label: { kk: 'Сипаттау', ru: 'Описание', en: 'Describing' }, icon: 'ruler' },
+  { id: 'numbers', label: { kk: 'Сандар', ru: 'Числа', en: 'Numbers' }, icon: 'hash' },
 ];
 
 /** One-handed gesture. */
@@ -151,8 +157,8 @@ const ENTRIES: readonly WordEntry[] = [
   { id: 'oinau', kk: 'ойнау', ru: 'играть', en: 'play', category: 'actions', gesture: two('call', 'call', 'apart', 'wave') },
 
   // ── Feelings & states ─────────────────────────────────────────────────
-  { id: 'zhaksy', kk: 'жақсы', ru: 'хорошо', en: 'good', category: 'feelings', gesture: one('thumb', 'chest', 'still', 'up'), hint: hint('👍', '👍', '👍') },
-  { id: 'zhaman', kk: 'жаман', ru: 'плохо', en: 'bad', category: 'feelings', gesture: one('thumb', 'chest', 'still', 'down'), hint: hint('👎', '👎', '👎') },
+  { id: 'zhaksy', kk: 'жақсы', ru: 'хорошо', en: 'good', category: 'feelings', gesture: one('thumb', 'chest', 'still', 'up'), hint: hint('Бас бармақ жоғары — «жақсы»', 'Большой палец вверх — «хорошо»', 'Thumbs up — “good”') },
+  { id: 'zhaman', kk: 'жаман', ru: 'плохо', en: 'bad', category: 'feelings', gesture: one('thumb', 'chest', 'still', 'down'), hint: hint('Бас бармақ төмен — «жаман»', 'Большой палец вниз — «плохо»', 'Thumbs down — “bad”') },
   { id: 'kuanyshtymyn', kk: 'қуаныштымын', ru: 'я рад(а)', en: 'I am happy', category: 'feelings', gesture: one('four', 'chest', 'circle'), hint: hint('Жүрек тұсында шеңбер', 'Круг у сердца', 'A circle over the heart') },
   { id: 'kaigyly', kk: 'қайғылы', ru: 'грустно', en: 'sad', category: 'feelings', gesture: one('pinky', 'chest') },
   { id: 'sharshadym', kk: 'шаршадым', ru: 'я устал(а)', en: 'I am tired', category: 'feelings', gesture: two('four', 'four', 'together', 'nod', 'chest'), hint: hint('Кеудеде екі алақан салбырайды', 'Обе ладони «опускаются» на груди', 'Both palms “drop” on the chest') },
@@ -161,7 +167,7 @@ const ENTRIES: readonly WordEntry[] = [
   { id: 'suyk', kk: 'суық', ru: 'холодно', en: 'cold', category: 'feelings', gesture: two('fist', 'fist', 'apart', 'wave'), hint: hint('Тоңғандай дірілдеу', 'Дрожать, как от холода', 'Shiver as if from the cold') },
   { id: 'ystyk', kk: 'ыстық', ru: 'жарко', en: 'hot', category: 'feelings', gesture: one('open', 'face', 'wave'), hint: hint('Бетті желпігендей', 'Как будто обмахиваете лицо', 'As if fanning your face') },
   { id: 'korkamyn', kk: 'қорқамын', ru: 'мне страшно', en: 'I am scared', category: 'feelings', gesture: two('fist', 'fist', 'together', 'still', 'face'), hint: hint('Жұдырықтармен бетті жабу', 'Закрыть лицо кулаками', 'Cover your face with your fists') },
-  { id: 'zhaksy_koremin', kk: 'жақсы көремін', ru: 'люблю', en: 'I love', category: 'feelings', gesture: one('ily', 'chest'), hint: hint('🤟 — халықаралық «сүйемін» белгісі', '🤟 — международный знак «люблю»', '🤟 — the international “I love you” sign') },
+  { id: 'zhaksy_koremin', kk: 'жақсы көремін', ru: 'люблю', en: 'I love', category: 'feelings', gesture: one('ily', 'chest'), hint: hint('Халықаралық «сүйемін» белгісі', 'Международный знак «люблю»', 'The international “I love you” sign') },
 
   // ── Time ──────────────────────────────────────────────────────────────
   { id: 'bugin', kk: 'бүгін', ru: 'сегодня', en: 'today', category: 'time', gesture: one('call', 'chest', 'nod') },

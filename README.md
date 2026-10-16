@@ -66,7 +66,7 @@ npm start            # (необязательно) раздать dist/ вме�
 
 ## Сайт, аккаунты и рейтинг — Firebase
 
-Сайт опубликован на **https://koldau.web.app** (Firebase Hosting, проект `qoldau-4630c`).
+Сайт опубликован на **https://qoldau-ym.web.app** (Firebase Hosting, проект `qoldau-4630c`).
 
 - **Аккаунты** — Firebase Authentication (почта + пароль). Пароль хранит Firebase, мы
   его не видим.
@@ -82,6 +82,9 @@ npm start            # (необязательно) раздать dist/ вме�
   npm run deploy       # сборка в режиме firebase + Hosting + правила и индексы Firestore
   ```
 
+  На Windows то же самое делает **`deploy.bat`** — двойной клик: проверит вход в
+  Firebase, сожмёт новые видео (если есть ffmpeg), прогонит тесты, соберёт и опубликует.
+
   В режиме `firebase` модели распознавания (~18 МБ) берутся с CDN Google, а голос — с
   Hugging Face, и кэшируются в браузере при первом использовании. Так каждый
   посетитель главной скачивает ~1–2 МБ, а не 21 МБ, и бесплатного лимита Hosting
@@ -94,7 +97,7 @@ npm start            # (необязательно) раздать dist/ вме�
 ## Поддержка проекта
 
 Контакты и реквизиты — в [src/data/donate.ts](src/data/donate.ts): Telegram
-@Gainiyusha и @tenmakiuy, Kaspi Gold +7 708 185 14 33 (Айбек Ә.). Там же можно добавить
+@Gainiyusha и @tenmakiuy, Kaspi Gold +7 777 138 77 93 (Ғайнижамал Б.). Там же можно добавить
 ссылку Kaspi Pay, картинку QR (в `public/donate/`) или номер карты.
 
 ## Видеоуроки
@@ -168,7 +171,7 @@ npm run videos       # нужен ffmpeg в PATH
 |---|---|
 | `npm run dev` | режим разработки (Vite + необязательный API) |
 | `npm run build` | проверка типов и сборка статического сайта в `dist/` |
-| `npm run deploy` | сборка для Firebase и публикация на koldau.web.app |
+| `npm run deploy` | сборка для Firebase и публикация на qoldau-ym.web.app |
 | `npm start` | раздать `dist/` вместе с API на порту 8787 |
 | `npm test` | тесты: формы кисти, движение, словарь, грамматика, подсказки |
 | `npm run docs:words` | пересоздать `docs/WORDS.md` из словаря |

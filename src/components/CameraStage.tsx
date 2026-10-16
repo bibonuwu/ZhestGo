@@ -3,6 +3,7 @@ import {
   DIRECTION_LABELS,
   LOCATION_SHORT,
   MOTION_SHORT,
+  RELATION_SHORT,
   SHAPE_SHORT,
   type Lang,
 } from '../data/gestureText';
@@ -116,7 +117,7 @@ function LivePanel({ live, lang, t }: { live: LiveInfo; lang: Lang; t: Translate
           <span className="live-item__label">{t('live.second')}</span>
           <strong>
             {live.nonDom ? shapeName(live.nonDom.shape) : '—'}
-            {live.relation && ` · ${live.relation === 'together' ? '🤝' : '↔'}`}
+            {live.relation && ` · ${RELATION_SHORT[live.relation][lang]}`}
           </strong>
         </div>
       </div>

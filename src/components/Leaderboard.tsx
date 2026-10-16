@@ -89,7 +89,7 @@ function MyPlace() {
   const me = useLeaderboard((s) => s.data?.me);
   if (!user) {
     return (
-      <button type="button" className="lb-join" onClick={() => useUi.getState().openDialog('register')}>
+      <button type="button" className="lb-join" onClick={() => useUi.getState().goAuth('register')}>
         <Icon name="trophy" size={18} /> {t('leader.join')} <Icon name="arrowRight" size={16} />
       </button>
     );
@@ -152,6 +152,9 @@ export function LeaderboardCard({ limit = 5 }: { limit?: number }) {
   );
 }
 
+/** Podium order, left to right: second, first, third. */
+const PLACES = [2, 1, 3] as const;
+
 /** Places 1–3 on a podium, the winner in the middle. */
 export function Podium({ rows, total }: { rows: LeaderRow[]; total: number }) {
   const t = useT();
@@ -174,8 +177,13 @@ export function Podium({ rows, total }: { rows: LeaderRow[]; total: number }) {
             <span className="podium__step">{r.rank}</span>
           </li>
         ) : (
-          <li key={`empty-${i}`} className="podium__place podium__place--empty" style={{ order: i }} aria-hidden="true">
-            <span className="podium__step">{i === 0 ? 2 : i === 1 ? 1 : 3}</span>
+          <li key={`empty-${i}`} className={`podium__place podium__place--${PLACES[i]} podium__place--empty`} style={{ order: i }}>
+            <span className="podium__seat" style={{ width: PLACES[i] === 1 ? 76 : 60, height: PLACES[i] === 1 ? 76 : 60 }} aria-hidden="true">
+              <Icon name="user" size={PLACES[i] === 1 ? 26 : 22} />
+            </span>
+            <strong className="podium__name">{t('leader.free')}</strong>
+            <span className="podium__score">0 / {total}</span>
+            <span className="podium__step">{PLACES[i]}</span>
           </li>
         ),
       )}
@@ -183,4 +191,4 @@ export function Podium({ rows, total }: { rows: LeaderRow[]; total: number }) {
   );
 }
 
-export { Row as LeaderboardRow, MyPlace };
+export { Row as LeaderboardRow };

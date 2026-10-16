@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useRef, useS
 import { CameraStage } from '../components/CameraStage';
 import { GestureVisual } from '../components/GestureVisual';
 import { Icon } from '../components/Icon';
+import { PageHead, Steps } from '../components/PageHead';
 import { describeGesture } from '../data/gestureText';
 import { capitalize, glossOf, lookupWord, matchesQuery, useAllWords, type AnyWord } from '../data/words';
 import { drawTrail } from '../gesture/draw';
@@ -45,7 +46,6 @@ interface Check {
 
 const LEVEL_KEYS = ['train.level.none', 'train.level.low', 'train.level.good', 'train.level.great'] as const;
 const FILTER_KEYS = { all: 'train.filter.all', todo: 'train.filter.todo', done: 'train.filter.done' } as const;
-const STEP_KEYS = ['train.step.camera', 'train.step.record', 'train.step.check'] as const;
 
 function levelOf(frames: number): Level {
   if (frames <= 0) return 0;
@@ -62,20 +62,6 @@ const QUALITY_KEYS: Record<ReturnType<typeof qualityOf>, MessageKey> = {
 };
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
-
-function Steps({ done, t }: { done: readonly boolean[]; t: Translate }) {
-  const active = done.indexOf(false);
-  return (
-    <ol className="train-steps" aria-label={t('train.steps')}>
-      {STEP_KEYS.map((key, i) => (
-        <li key={key} className={`train-step${done[i] ? ' is-done' : ''}${i === active ? ' is-active' : ''}`} aria-current={i === active ? 'step' : undefined}>
-          <span className="train-step__mark">{done[i] ? <Icon name="check" size={14} /> : i + 1}</span>
-          <span className="train-step__label">{t(key)}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
 
 function Meter({ frames, t }: { frames: number; t: Translate }) {
   const level = levelOf(frames);
@@ -637,224 +623,239 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
 
   return (
     <div className="page train">
-      <div className="train__stage">
-        <Steps done={[ready, frames >= GOAL_FRAMES, verifiedId === selected.id]} t={t} />
-        <div className="train__camera" ref={cameraRef}>
-          <CameraStage onFrame={onFrame} videoRef={videoRef} overlay={overlay} hideCandidate={!idle || flash !== null} />
+      <PageHead
+        compact
+        icon="graduate"
+        eyebrow={t('page.train.eyebrow')}
+        title={t('nav.train')}
+        sub={t('page.train.sub')}
+        aside={
+          <Steps
+            label={t('train.steps')}
+            labels={[t('train.step.camera'), t('train.step.record'), t('train.step.check')]}
+            done={[ready, frames >= GOAL_FRAMES, verifiedId === selected.id]}
+          />
+        }
+      />
+      <div className="train__grid">
+        <div className="train__stage">
+          <div className="train__camera" ref={cameraRef}>
+            <CameraStage onFrame={onFrame} videoRef={videoRef} overlay={overlay} hideCandidate={!idle || flash !== null} />
+          </div>
+          <TakeStrip
+            word={selected}
+            takes={wordTakes}
+            earlier={earlier}
+            phase={phase}
+            countdown={countdown}
+            captured={captured}
+            slots={slots}
+            t={t}
+            onRemove={(id) => {
+              removeTake(id);
+              useUi.getState().showToast(t('train.takeRemoved'));
+            }}
+          />
+          <div className="train__notes">
+            <p className="notice">{t('train.intro')}</p>
+            {mode === 'templates' && <p className="notice notice--warn">{t('train.modeWarning')}</p>}
+          </div>
         </div>
-        <TakeStrip
-          word={selected}
-          takes={wordTakes}
-          earlier={earlier}
-          phase={phase}
-          countdown={countdown}
-          captured={captured}
-          slots={slots}
-          t={t}
-          onRemove={(id) => {
-            removeTake(id);
-            useUi.getState().showToast(t('train.takeRemoved'));
-          }}
-        />
-        <div className="train__notes">
-          <p className="notice">{t('train.intro')}</p>
-          {mode === 'templates' && <p className="notice notice--warn">{t('train.modeWarning')}</p>}
-        </div>
-      </div>
 
-      <aside className="train__side">
-        <section className={`card train-word${idle ? '' : ' is-recording'}`}>
-          <header className="train-word__head">
-            <div>
-              <h2 lang="kk">{capitalize(selected.kk)}</h2>
-              <p className="muted">{glossOf(selected, lang)}</p>
-            </div>
-            {frames > 0 && idle && (
-              <button className="icon-btn" onClick={() => clearWord(selected.id)} title={t('train.clearWord')} aria-label={t('train.clearWord')}>
-                <Icon name="trash" size={16} />
-              </button>
-            )}
-          </header>
-
-          <Meter frames={frames} t={t} />
-
-          {selected.gesture ? (
-            <div className="train-word__template">
-              <span className="label">{t('train.template')}</span>
-              <GestureVisual spec={selected.gesture} lang={lang} />
-              <p className="word-card__desc">{describeGesture(selected.gesture, lang)}</p>
-            </div>
-          ) : (
-            <p className="muted train-word__none">{t('train.noTemplate')}</p>
-          )}
-
-          <div className="train-controls">
-            <div className="train-controls__row">
-              <span className="label">{t('train.series')}</span>
-              <div className="segmented segmented--sm" role="group" aria-label={t('train.series')}>
-                {SERIES_OPTIONS.map((n) => (
-                  <button
-                    key={n}
-                    className={n === series ? 'is-active' : undefined}
-                    aria-pressed={n === series}
-                    disabled={!idle}
-                    onClick={() => updateSettings({ trainSeries: n })}
-                  >
-                    ×{n}
-                  </button>
-                ))}
+        <aside className="train__side">
+          <section className={`card train-word${idle ? '' : ' is-recording'}`}>
+            <header className="train-word__head">
+              <div>
+                <h2 lang="kk">{capitalize(selected.kk)}</h2>
+                <p className="muted">{glossOf(selected, lang)}</p>
               </div>
-              <button
-                className={`icon-btn${beeps ? ' is-on' : ''}`}
-                aria-pressed={beeps}
-                onClick={() => updateSettings({ trainBeeps: !beeps })}
-                title={t('train.beeps')}
-                aria-label={t('train.beeps')}
-              >
-                <Icon name={beeps ? 'speaker' : 'speakerOff'} size={17} />
-              </button>
+              {frames > 0 && idle && (
+                <button className="icon-btn" onClick={() => clearWord(selected.id)} title={t('train.clearWord')} aria-label={t('train.clearWord')}>
+                  <Icon name="trash" size={16} />
+                </button>
+              )}
+            </header>
+
+            <Meter frames={frames} t={t} />
+
+            {selected.gesture ? (
+              <div className="train-word__template">
+                <span className="label">{t('train.template')}</span>
+                <GestureVisual spec={selected.gesture} lang={lang} />
+                <p className="word-card__desc">{describeGesture(selected.gesture, lang)}</p>
+              </div>
+            ) : (
+              <p className="muted train-word__none">{t('train.noTemplate')}</p>
+            )}
+
+            <div className="train-controls">
+              <div className="train-controls__row">
+                <span className="label">{t('train.series')}</span>
+                <div className="segmented segmented--sm" role="group" aria-label={t('train.series')}>
+                  {SERIES_OPTIONS.map((n) => (
+                    <button
+                      key={n}
+                      className={n === series ? 'is-active' : undefined}
+                      aria-pressed={n === series}
+                      disabled={!idle}
+                      onClick={() => updateSettings({ trainSeries: n })}
+                    >
+                      ×{n}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className={`icon-btn${beeps ? ' is-on' : ''}`}
+                  aria-pressed={beeps}
+                  onClick={() => updateSettings({ trainBeeps: !beeps })}
+                  title={t('train.beeps')}
+                  aria-label={t('train.beeps')}
+                >
+                  <Icon name={beeps ? 'speaker' : 'speakerOff'} size={17} />
+                </button>
+              </div>
+
+              {!cameraOn ? (
+                <button className="btn btn--primary btn--lg" onClick={() => useUi.getState().setCameraOn(true)}>
+                  <Icon name="video" /> {t('camera.start')}
+                </button>
+              ) : (
+                <button
+                  className={`btn btn--lg ${idle ? 'btn--record' : 'btn--stop'}`}
+                  onClick={idle ? startSeries : cancelSeries}
+                  disabled={idle && !ready}
+                >
+                  {idle ? (
+                    <>
+                      <Icon name="record" /> {t('train.record')}
+                      {series > 1 && <span className="btn__meta">×{series}</span>}
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="stop" /> {t('train.cancel')}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
-            {!cameraOn ? (
-              <button className="btn btn--primary btn--lg" onClick={() => useUi.getState().setCameraOn(true)}>
-                <Icon name="video" /> {t('camera.start')}
-              </button>
-            ) : (
-              <button
-                className={`btn btn--lg ${idle ? 'btn--record' : 'btn--stop'}`}
-                onClick={idle ? startSeries : cancelSeries}
-                disabled={idle && !ready}
-              >
-                {idle ? (
-                  <>
-                    <Icon name="record" /> {t('train.record')}
-                    {series > 1 && <span className="btn__meta">×{series}</span>}
-                  </>
-                ) : (
-                  <>
-                    <Icon name="stop" /> {t('train.cancel')}
-                  </>
-                )}
+            <CheckRow phase={phase} ready={ready} check={check} selectedId={selected.id} userWords={userWords} t={t} />
+            <p className="sr-only" role="status">
+              {flashText}
+            </p>
+
+            {level === 3 && idle && nextWord && nextWord.id !== selected.id && (
+              <button className="btn btn--primary next-word" onClick={() => selectWord(nextWord.id)}>
+                {t('train.next')}: <span lang="kk">{capitalize(nextWord.kk)}</span>
+                <Icon name="arrowRight" size={16} />
               </button>
             )}
-          </div>
 
-          <CheckRow phase={phase} ready={ready} check={check} selectedId={selected.id} userWords={userWords} t={t} />
-          <p className="sr-only" role="status">
-            {flashText}
-          </p>
+            <p className="keys">
+              <span>
+                <kbd>{t('train.key.space')}</kbd>
+                <kbd>R</kbd> {t('train.key.record')}
+              </span>
+              <span>
+                <kbd>Esc</kbd> {t('train.key.stop')}
+              </span>
+              <span>
+                <kbd>↑</kbd>
+                <kbd>↓</kbd> {t('train.key.word')}
+              </span>
+              <span>
+                <kbd>N</kbd> {t('train.key.next')}
+              </span>
+            </p>
+            <p className="hint">{t('train.tip')}</p>
 
-          {level === 3 && idle && nextWord && nextWord.id !== selected.id && (
-            <button className="btn btn--primary next-word" onClick={() => selectWord(nextWord.id)}>
-              {t('train.next')}: <span lang="kk">{capitalize(nextWord.kk)}</span>
-              <Icon name="arrowRight" size={16} />
-            </button>
-          )}
-
-          <p className="keys">
-            <span>
-              <kbd>{t('train.key.space')}</kbd>
-              <kbd>R</kbd> {t('train.key.record')}
-            </span>
-            <span>
-              <kbd>Esc</kbd> {t('train.key.stop')}
-            </span>
-            <span>
-              <kbd>↑</kbd>
-              <kbd>↓</kbd> {t('train.key.word')}
-            </span>
-            <span>
-              <kbd>N</kbd> {t('train.key.next')}
-            </span>
-          </p>
-          <p className="hint">{t('train.tip')}</p>
-
-          {selected.category === 'custom' && idle && (
-            <button
-              className="btn btn--ghost btn--sm btn--danger"
-              onClick={() => {
-                deleteUserWord(selected.id);
-                selectWord(words[0].id);
-              }}
-            >
-              <Icon name="trash" size={14} /> {t('train.deleteWord')}
-            </button>
-          )}
-        </section>
-
-        <section className="card train-list">
-          <label className="search search--compact">
-            <Icon name="search" />
-            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('train.search')} aria-label={t('train.search')} />
-          </label>
-          <div className="segmented segmented--sm segmented--fill" role="group">
-            {(Object.keys(FILTER_KEYS) as Filter[]).map((f) => (
-              <button key={f} className={f === filter ? 'is-active' : undefined} aria-pressed={f === filter} onClick={() => setFilter(f)}>
-                {t(FILTER_KEYS[f])}
-                <span className="segmented__count">{counts[f]}</span>
+            {selected.category === 'custom' && idle && (
+              <button
+                className="btn btn--ghost btn--sm btn--danger"
+                onClick={() => {
+                  deleteUserWord(selected.id);
+                  selectWord(words[0].id);
+                }}
+              >
+                <Icon name="trash" size={14} /> {t('train.deleteWord')}
               </button>
-            ))}
-          </div>
-          <ul className="word-list" role="listbox" aria-label={t('train.search')} ref={listRef}>
-            {listed.map((w) => {
-              const n = samples[w.id]?.length ?? 0;
-              return (
-                <li key={w.id}>
-                  <button
-                    role="option"
-                    aria-selected={w.id === selected.id}
-                    className={`word-list__item${w.id === selected.id ? ' is-active' : ''}`}
-                    onClick={() => selectWord(w.id)}
-                    disabled={!idle}
-                    title={t('train.frames', { n })}
-                  >
-                    <span lang="kk">{capitalize(w.kk)}</span>
-                    <small>{glossOf(w, lang)}</small>
-                    <Dots frames={n} />
-                  </button>
-                </li>
-              );
-            })}
-            {listed.length === 0 && <li className="empty word-list__empty">{t('dict.nothing')}</li>}
-          </ul>
-        </section>
+            )}
+          </section>
 
-        <section className="card train-new">
-          <h2 className="card__title">{t('train.newWord')}</h2>
-          <form className="new-word" onSubmit={submitNewWord}>
-            <input value={newKk} onChange={(e) => setNewKk(e.target.value)} placeholder={t('train.kk')} aria-label={t('train.kk')} lang="kk" maxLength={80} required />
-            <button className="btn" type="submit">
-              <Icon name="plus" /> {t('train.add')}
-            </button>
-          </form>
-        </section>
+          <section className="card train-list">
+            <label className="search search--compact">
+              <Icon name="search" />
+              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('train.search')} aria-label={t('train.search')} />
+            </label>
+            <div className="segmented segmented--sm segmented--fill" role="group">
+              {(Object.keys(FILTER_KEYS) as Filter[]).map((f) => (
+                <button key={f} className={f === filter ? 'is-active' : undefined} aria-pressed={f === filter} onClick={() => setFilter(f)}>
+                  {t(FILTER_KEYS[f])}
+                  <span className="segmented__count">{counts[f]}</span>
+                </button>
+              ))}
+            </div>
+            <ul className="word-list" role="listbox" aria-label={t('train.search')} ref={listRef}>
+              {listed.map((w) => {
+                const n = samples[w.id]?.length ?? 0;
+                return (
+                  <li key={w.id}>
+                    <button
+                      role="option"
+                      aria-selected={w.id === selected.id}
+                      className={`word-list__item${w.id === selected.id ? ' is-active' : ''}`}
+                      onClick={() => selectWord(w.id)}
+                      disabled={!idle}
+                      title={t('train.frames', { n })}
+                    >
+                      <span lang="kk">{capitalize(w.kk)}</span>
+                      <small>{glossOf(w, lang)}</small>
+                      <Dots frames={n} />
+                    </button>
+                  </li>
+                );
+              })}
+              {listed.length === 0 && <li className="empty word-list__empty">{t('dict.nothing')}</li>}
+            </ul>
+          </section>
 
-        <section className="card train-data">
-          <h2 className="card__title">{t('train.data')}</h2>
-          <div className="bar" aria-hidden="true">
-            <span style={{ width: `${words.length ? (trainedWords / words.length) * 100 : 0}%` }} />
-          </div>
-          <p className="muted">{t('train.stats', { w: trainedWords, t: words.length, n: totalSamples })}</p>
-          <div className="data-actions">
-            <button className="btn btn--sm" onClick={download} disabled={!totalSamples && !userWords.length}>
-              <Icon name="download" size={15} /> {t('train.export')}
-            </button>
-            <button className="btn btn--sm" onClick={() => fileInput.current?.click()}>
-              <Icon name="upload" size={15} /> {t('train.import')}
-            </button>
-            <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={(e) => void upload(e)} />
-            <button
-              className="btn btn--sm btn--ghost btn--danger"
-              disabled={!totalSamples && !userWords.length}
-              onClick={() => {
-                if (window.confirm(t('train.confirmReset'))) resetAll();
-              }}
-            >
-              <Icon name="trash" size={15} /> {t('train.reset')}
-            </button>
-          </div>
-        </section>
-      </aside>
+          <section className="card train-new">
+            <h2 className="card__title">{t('train.newWord')}</h2>
+            <form className="new-word" onSubmit={submitNewWord}>
+              <input value={newKk} onChange={(e) => setNewKk(e.target.value)} placeholder={t('train.kk')} aria-label={t('train.kk')} lang="kk" maxLength={80} required />
+              <button className="btn" type="submit">
+                <Icon name="plus" /> {t('train.add')}
+              </button>
+            </form>
+          </section>
+
+          <section className="card train-data">
+            <h2 className="card__title">{t('train.data')}</h2>
+            <div className="bar" aria-hidden="true">
+              <span style={{ width: `${words.length ? (trainedWords / words.length) * 100 : 0}%` }} />
+            </div>
+            <p className="muted">{t('train.stats', { w: trainedWords, t: words.length, n: totalSamples })}</p>
+            <div className="data-actions">
+              <button className="btn btn--sm" onClick={download} disabled={!totalSamples && !userWords.length}>
+                <Icon name="download" size={15} /> {t('train.export')}
+              </button>
+              <button className="btn btn--sm" onClick={() => fileInput.current?.click()}>
+                <Icon name="upload" size={15} /> {t('train.import')}
+              </button>
+              <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={(e) => void upload(e)} />
+              <button
+                className="btn btn--sm btn--ghost btn--danger"
+                disabled={!totalSamples && !userWords.length}
+                onClick={() => {
+                  if (window.confirm(t('train.confirmReset'))) resetAll();
+                }}
+              >
+                <Icon name="trash" size={15} /> {t('train.reset')}
+              </button>
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

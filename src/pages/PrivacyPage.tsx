@@ -1,4 +1,5 @@
 import { Icon, type IconName } from '../components/Icon';
+import { PageHead } from '../components/PageHead';
 import { useT, type MessageKey } from '../i18n';
 import { CloudError } from '../lib/cloud';
 import { useAuth } from '../store/auth';
@@ -7,6 +8,7 @@ import { useUi } from '../store/ui';
 
 const SECTIONS: Array<{ icon: IconName; title: MessageKey; text: MessageKey }> = [
   { icon: 'user', title: 'privacy.account.title', text: 'privacy.account.text' },
+  { icon: 'chat', title: 'privacy.chat.title', text: 'privacy.chat.text' },
   { icon: 'cookie', title: 'privacy.cookie.title', text: 'privacy.cookie.text' },
   { icon: 'server', title: 'privacy.local.title', text: 'privacy.local.text' },
   { icon: 'video', title: 'privacy.camera.title', text: 'privacy.camera.text' },
@@ -30,7 +32,7 @@ export function PrivacyPage() {
     } catch (err) {
       const relogin = err instanceof CloudError && err.code === 'relogin';
       useUi.getState().showToast(t(relogin ? 'auth.err.relogin' : 'auth.err.generic'));
-      if (relogin) useUi.getState().openDialog('login');
+      if (relogin) useUi.getState().goAuth('login');
     }
   };
 
@@ -38,13 +40,7 @@ export function PrivacyPage() {
 
   return (
     <div className="page privacy">
-      <header className="page-hero">
-        <div>
-          <p className="eyebrow">Qoldau</p>
-          <h1>{t('privacy.title')}</h1>
-          <p>{t('privacy.intro')}</p>
-        </div>
-      </header>
+      <PageHead icon="shield" eyebrow="Qoldau" title={t('privacy.title')} sub={t('privacy.intro')} />
 
       <div className="privacy__grid">
         {SECTIONS.map((s) => (

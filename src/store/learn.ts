@@ -14,6 +14,8 @@ interface LearnStore {
   toggle: (id: string) => void;
   /** Returns true when the sign was not learned before. */
   mark: (id: string) => boolean;
+  /** Sends a forgotten sign back to the lessons. Returns true when it was learned. */
+  unmark: (id: string) => boolean;
   replace: (ids: Iterable<string>) => void;
 }
 
@@ -29,6 +31,12 @@ export const useLearn = create<LearnStore>()(
         const { learned } = get();
         if (learned.includes(id)) return false;
         set({ learned: orderSigns([...learned, id]) });
+        return true;
+      },
+      unmark: (id) => {
+        const { learned } = get();
+        if (!learned.includes(id)) return false;
+        set({ learned: learned.filter((x) => x !== id) });
         return true;
       },
       replace: (ids) => set({ learned: orderSigns(ids) }),

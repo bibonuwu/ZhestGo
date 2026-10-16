@@ -36,7 +36,7 @@ export const SHAPE_SHORT: Record<HandShape, Localized> = {
   pinky: { kk: 'Шынашақ', ru: 'Мизинец', en: 'Little finger' },
   call: { kk: 'Телефон', ru: 'Телефон', en: 'Phone' },
   l: { kk: 'L', ru: 'L', en: 'L' },
-  ily: { kk: '🤟', ru: '🤟', en: '🤟' },
+  ily: { kk: '«Сүйемін»', ru: '«Люблю»', en: '“I love you”' },
   horns: { kk: 'Мүйіз', ru: 'Рожки', en: 'Horns' },
   pinch: { kk: 'Шоқ саусақ', ru: 'Щепоть', en: 'Pinch' },
 };
@@ -53,6 +53,11 @@ export const LOCATION_LABELS: Record<Location, Localized> = {
   face: { kk: 'бет / иек деңгейінде', ru: 'на уровне лица', en: 'at face level' },
   chest: { kk: 'кеуде деңгейінде', ru: 'на уровне груди', en: 'at chest level' },
   low: { kk: 'төменде', ru: 'внизу', en: 'low' },
+};
+
+export const RELATION_SHORT: Record<Relation, Localized> = {
+  together: { kk: 'бірге', ru: 'вместе', en: 'together' },
+  apart: { kk: 'бөлек', ru: 'врозь', en: 'apart' },
 };
 
 export const LOCATION_SHORT: Record<Location, Localized> = {

@@ -41,5 +41,39 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(uid);
     }
+
+    // The shared chat (src/lib/chat.ts) — chat/{id}: { uid, name, text, createdAt }.
+    // Only signed-in users read it. A message is accepted only from an account
+    // with a profile, under that profile's name, and in one batch with the
+    // author's chatMeta/{uid}: { last }, which may change once per 3 seconds.
+    function chatMeta(uid) {
+      return /databases/$(database)/documents/chatMeta/$(uid);
+    }
+
+    function validMessage(d) {
+      let fields = ['uid', 'name', 'text', 'createdAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.uid == request.auth.uid
+        && d.name == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+        && d.text is string && d.text.size() >= 1 && d.text.size() <= 500
+        && !d.text.matches('\\s*')
+        && d.createdAt == request.time;
+    }
+
+    match /chat/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && validMessage(request.resource.data)
+        && getAfter(chatMeta(request.auth.uid)).data.last == request.time;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    match /chatMeta/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create: if isOwner(uid) && request.resource.data.keys().hasOnly(['last'])
+        && request.resource.data.last == request.time;
+      allow update: if isOwner(uid) && request.resource.data.keys().hasOnly(['last'])
+        && request.resource.data.last == request.time
+        && request.time > resource.data.last + duration.value(3, 's');
+    }
   }
 }
