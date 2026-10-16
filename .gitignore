@@ -9,5 +9,7 @@ public/models
 public/voices
 dev-dist
 
+.firebase
+
 .DS_Store
 *.log

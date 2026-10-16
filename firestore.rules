@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Qoldau: one public profile per account for the leaderboard —
+// users/{uid}: { name, learned, learnedCount, createdAt, updatedAt }.
+// E-mail and password live in Firebase Authentication, never in Firestore.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // The video lessons in src/data/signs.ts (src/data/signs.test.ts keeps them in sync).
+    function signIds() {
+      return [
+        'salem', 'ia', 'esim', 'ana', 'ake', 'kala', 'bugin', 'erten', 'keshe', 'su',
+        'ui', 'kitap', 'mektep', 'it', 'mysyk', 'nan', 'dos', 'otbasy', 'tamak', 'kun',
+        'bala', 'zhaksy', 'zhaman', 'tun', 'tan', 'kesh', 'aksha', 'uakyt', 'balyk', 'kus',
+        'kyzyl', 'kok', 'zhasyl', 'ak', 'kara', 'sary', 'ulken', 'kishkentai', 'erkek', 'aiel',
+        'apta', 'ai', 'zhyl', 'oku', 'zhazu', 'ushu', 'uiyktau', 'tyndau', 'karau', 'bilu'
+      ];
+    }
+
+    function validProfile(d) {
+      let fields = ['name', 'learned', 'learnedCount', 'createdAt', 'updatedAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 40 && !d.name.matches('.*[<>].*')
+        && d.learned is list && d.learned.size() <= 50
+        && d.learned.toSet().size() == d.learned.size()
+        && d.learned.hasOnly(signIds())
+        && d.learnedCount == d.learned.size()
+        && d.updatedAt == request.time;
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      // The leaderboard is public: names and learned signs.
+      allow read: if true;
+      allow create: if isOwner(uid) && validProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid) && validProfile(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(uid);
+    }
+  }
+}

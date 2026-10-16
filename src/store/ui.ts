@@ -6,6 +6,9 @@ export interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+/** A dialog over the page. */
+export type Dialog = 'donate' | 'login' | 'register';
+
 interface UiStore {
   /** Camera switched on during this visit; other pages start it without asking again. */
   cameraOn: boolean;
@@ -17,6 +20,15 @@ interface UiStore {
   installPrompt: InstallPromptEvent | null;
   /** The app shell is cached and works offline. */
   offlineReady: boolean;
+  dialog: Dialog | null;
+  /** Sign id whose video lesson is open. */
+  lesson: string | null;
+  /** Lesson ids the open lesson steps through with “Previous” / “Next”. */
+  lessonList: readonly string[];
+  openDialog: (dialog: Dialog) => void;
+  closeDialog: () => void;
+  openLesson: (id: string, list?: readonly string[]) => void;
+  closeLesson: () => void;
   setCameraOn: (on: boolean) => void;
   showToast: (text: string) => void;
 }
@@ -31,6 +43,13 @@ export const useUi = create<UiStore>((set) => ({
   applyUpdate: null,
   installPrompt: null,
   offlineReady: false,
+  dialog: null,
+  lesson: null,
+  lessonList: [],
+  openDialog: (dialog) => set({ dialog }),
+  closeDialog: () => set({ dialog: null }),
+  openLesson: (lesson, list) => set((s) => ({ lesson, lessonList: list ?? s.lessonList })),
+  closeLesson: () => set({ lesson: null }),
   setCameraOn: (cameraOn) => set({ cameraOn }),
   showToast: (text) => {
     clearTimeout(toastTimer);

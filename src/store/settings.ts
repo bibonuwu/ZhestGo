@@ -51,7 +51,7 @@ const browserLang = (): Lang => {
 
 export const DEFAULT_SETTINGS: Settings = {
   lang: browserLang(),
-  theme: 'system',
+  theme: 'light',
   dominant: 'right',
   holdMs: 550,
   mode: 'both',
@@ -87,12 +87,14 @@ export const useSettings = create<SettingsStore>()(
     }),
     {
       name: 'qoldau.settings',
-      version: 2,
+      version: 3,
       partialize: ({ update: _update, reset: _reset, ...settings }) => settings,
       migrate: (persisted, version) => {
         const state = persisted as Partial<Settings>;
         // v2: the browser voice became the default speech engine.
         if (version < 2 && state.engine === 'auto') state.engine = 'browser';
+        // v3: the light theme became the default instead of following the system.
+        if (version < 3 && state.theme === 'system') state.theme = 'light';
         return state as SettingsStore;
       },
     },

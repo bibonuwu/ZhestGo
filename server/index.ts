@@ -15,6 +15,9 @@ const MAX_TTS_LENGTH = 500;
 
 const app = express();
 app.disable('x-powered-by');
+// Behind a hosting proxy (Render, Railway, nginx…) set TRUST_PROXY=1 so that
+// the rate limits apply to each visitor's own IP, not the proxy's.
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY : 'loopback');
 app.use(express.json({ limit: '16kb' }));
 
 app.get('/api/health', (_req, res) => {

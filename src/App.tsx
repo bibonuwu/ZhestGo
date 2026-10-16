@@ -1,18 +1,29 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { AuthDialog } from './components/AuthDialog';
+import { CookieBanner } from './components/CookieBanner';
+import { DonateDialog } from './components/DonateDialog';
 import { Header, type Page } from './components/Header';
-import { AUTHORS } from './data/authors';
+import { LessonDialog } from './components/LessonDialog';
 import { useT } from './i18n';
-import { DictionaryPage } from './pages/DictionaryPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { TrainPage } from './pages/TrainPage';
-import { TranslatePage } from './pages/TranslatePage';
+import { HomePage, SiteFooter } from './pages/HomePage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { LearnPage } from './pages/LearnPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { useAuth } from './store/auth';
 import { useSettings } from './store/settings';
 import { useServerStatus } from './store/status';
 import { useTraining } from './store/training';
 import { useUi } from './store/ui';
 import { useVoice } from './store/voice';
 
-const PAGES: readonly Page[] = ['translate', 'dictionary', 'train', 'settings'];
+// The camera pages carry the recognition engine; they load when first opened,
+// so the home page appears quickly.
+const TranslatePage = lazy(() => import('./pages/TranslatePage').then((m) => ({ default: m.TranslatePage })));
+const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
+const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+
+const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'leaderboard', 'train', 'settings', 'privacy'];
 
 interface Route {
   page: Page;
@@ -21,31 +32,51 @@ interface Route {
 
 function parseHash(): Route {
   const [path = '', query = ''] = window.location.hash.replace(/^#\/?/, '').split('?');
-  const page = PAGES.includes(path as Page) ? (path as Page) : 'translate';
+  const page = PAGES.includes(path as Page) ? (path as Page) : 'home';
   return { page, params: new URLSearchParams(query) };
-}
-
-function Footer() {
-  const t = useT();
-  return (
-    <footer className="footer">
-      <span>
-        {t('footer.authors')}: <strong>{AUTHORS.join(', ')}</strong>
-      </span>
-      <span className="footer__app">Qoldau · {new Date().getFullYear()}</span>
-    </footer>
-  );
 }
 
 function Toast() {
   const toast = useUi((s) => s.toast);
+  const region = useRef<HTMLDivElement>(null);
+
+  // A popover sits in the top layer, so the toast also shows above open dialogs.
+  useEffect(() => {
+    const el = region.current;
+    if (!el?.showPopover) return;
+    if (el.matches(':popover-open')) el.hidePopover();
+    if (toast) el.showPopover();
+  }, [toast]);
+
   return (
-    <div className="toast-region" aria-live="polite">
+    <div ref={region} className="toast-region" aria-live="polite" popover="manual">
       {toast && (
         <div key={toast.id} className="toast">
           {toast.text}
         </div>
       )}
+    </div>
+  );
+}
+
+function Dialogs() {
+  const dialog = useUi((s) => s.dialog);
+  const lesson = useUi((s) => s.lesson);
+  const { closeDialog, closeLesson } = useUi.getState();
+  return (
+    <>
+      {dialog === 'donate' && <DonateDialog onClose={closeDialog} />}
+      {(dialog === 'login' || dialog === 'register') && <AuthDialog mode={dialog} onClose={closeDialog} />}
+      {lesson && <LessonDialog id={lesson} onClose={closeLesson} />}
+    </>
+  );
+}
+
+function PageLoading() {
+  const t = useT();
+  return (
+    <div className="page-loading" role="status">
+      <span className="spinner" aria-hidden="true" /> {t('leader.loading')}
     </div>
   );
 }
@@ -58,6 +89,7 @@ export function App() {
   useEffect(() => {
     const onHash = () => {
       setRoute(parseHash());
+      useUi.getState().closeLesson();
       window.scrollTo({ top: 0 });
     };
     window.addEventListener('hashchange', onHash);
@@ -67,6 +99,8 @@ export function App() {
   useEffect(() => {
     void useTraining.getState().load();
     void useVoice.getState().refresh();
+    // Accounts (Firebase): the saved session also works offline.
+    void useAuth.getState().start();
     // The API server is optional; only ask for it when there is a network.
     const refreshServer = () => void useServerStatus.getState().refresh();
     if (navigator.onLine) refreshServer();
@@ -84,17 +118,39 @@ export function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
+  const overlays = (
+    <>
+      <Dialogs />
+      <CookieBanner />
+      <Toast />
+    </>
+  );
+
+  if (route.page === 'home') {
+    return (
+      <>
+        <HomePage />
+        {overlays}
+      </>
+    );
+  }
+
   return (
     <div className="app">
       <Header page={route.page} />
       <main className="main" id="main">
-        {route.page === 'translate' && <TranslatePage />}
-        {route.page === 'dictionary' && <DictionaryPage />}
-        {route.page === 'train' && <TrainPage initialWord={route.params.get('word') ?? undefined} />}
-        {route.page === 'settings' && <SettingsPage />}
+        <Suspense fallback={<PageLoading />}>
+          {route.page === 'translate' && <TranslatePage />}
+          {route.page === 'dictionary' && <DictionaryPage />}
+          {route.page === 'learn' && <LearnPage />}
+          {route.page === 'leaderboard' && <LeaderboardPage />}
+          {route.page === 'train' && <TrainPage initialWord={route.params.get('word') ?? undefined} />}
+          {route.page === 'settings' && <SettingsPage />}
+          {route.page === 'privacy' && <PrivacyPage />}
+        </Suspense>
       </main>
-      <Footer />
-      <Toast />
+      <SiteFooter />
+      {overlays}
     </div>
   );
 }

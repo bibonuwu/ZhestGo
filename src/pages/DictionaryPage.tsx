@@ -2,9 +2,11 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { GestureVisual } from '../components/GestureVisual';
 import { Icon } from '../components/Icon';
 import { describeGesture } from '../data/gestureText';
+import { SIGN_BY_WORD, SIGNS } from '../data/signs';
 import { CATEGORIES, type CategoryId } from '../data/vocabulary';
 import { capitalize, glossOf, matchesQuery, useAllWords, type AnyWord } from '../data/words';
 import { useT } from '../i18n';
+import { signPoster } from '../lib/media';
 import { speakText } from '../lib/phrase';
 import { useSession } from '../store/session';
 import { useSettings } from '../store/settings';
@@ -17,6 +19,7 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
   const t = useT();
   const lang = useSettings((s) => s.lang);
   const title = capitalize(word.kk) + (word.question ? '?' : '');
+  const sign = SIGN_BY_WORD.get(word.id);
 
   const add = () => {
     useSession.getState().addWord(word.id, 'tap');
@@ -36,6 +39,19 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
           </span>
         )}
       </header>
+      {sign && (
+        <button
+          type="button"
+          className="word-card__video"
+          onClick={() => useUi.getState().openLesson(sign.id, SIGNS.map((s) => s.id))}
+          aria-label={`${t('learn.watch')}: ${word.kk}`}
+        >
+          <img src={signPoster(sign.id)} alt="" loading="lazy" width={450} height={640} />
+          <span>
+            <Icon name="play" size={14} /> {t('learn.watch')}
+          </span>
+        </button>
+      )}
       {word.gesture ? (
         <>
           <GestureVisual spec={word.gesture} lang={lang} />
@@ -68,13 +84,14 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
 export function DictionaryPage() {
   const t = useT();
   const lang = useSettings((s) => s.lang);
-  const words = useAllWords();
+  // Only the words that have a video lesson are listed; recognition still knows all of them.
+  const allWords = useAllWords();
+  const words = useMemo(() => allWords.filter((w) => SIGN_BY_WORD.has(w.id)), [allWords]);
   const samples = useTraining((s) => s.samples);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const deferredQuery = useDeferredValue(query);
 
-  const hasCustom = words.some((w) => w.category === 'custom');
   const counts = useMemo(() => {
     const c = new Map<Filter, number>([['all', words.length]]);
     for (const w of words) c.set(w.category, (c.get(w.category) ?? 0) + 1);
@@ -88,8 +105,7 @@ export function DictionaryPage() {
 
   const filters: Array<{ id: Filter; label: string; icon?: string }> = [
     { id: 'all', label: t('dict.all') },
-    ...CATEGORIES.map((c) => ({ id: c.id as Filter, label: c.label[lang], icon: c.icon })),
-    ...(hasCustom ? [{ id: 'custom' as Filter, label: t('dict.mine'), icon: '⭐' }] : []),
+    ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) => ({ id: c.id as Filter, label: c.label[lang], icon: c.icon })),
   ];
 
   return (

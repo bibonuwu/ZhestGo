@@ -7,6 +7,7 @@ import { translate } from './i18n';
 import { useSettings } from './store/settings';
 import { useUi, type InstallPromptEvent } from './store/ui';
 import './styles.css';
+import './site.css';
 
 // Offline support: the service worker caches the app, the fonts and the
 // recognition models. A new version waits until the user chooses to update.

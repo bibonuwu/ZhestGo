@@ -5,12 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Qoldau — ым тілін камера арқылы танып, қазақша мәтін мен дауысқа айналдыратын көмекші." />
     <meta name="author" content="Ерланқызы Айшабибі, Берікқызы Ғайнижамал" />
-    <meta name="theme-color" content="#0284c7" />
+    <meta name="theme-color" content="#2d8ee8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Qoldau" />
     <title>Qoldau — ым тілінен қазақ сөзіне</title>
+    <script>
+      // Apply the saved theme before the first paint (light unless chosen otherwise).
+      try {
+        var saved = JSON.parse(localStorage.getItem('qoldau.settings') || '{}');
+        var theme = (saved.state || {}).theme;
+        // Before v3 "system" was the default; it now migrates to light (store/settings.ts).
+        if (!theme || (theme === 'system' && (saved.version || 0) < 3)) theme = 'light';
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch (e) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

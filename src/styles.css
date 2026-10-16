@@ -1,16 +1,20 @@
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  --bg: #f3f6fa;
+  --bg: #f5f8f2;
   --surface: #ffffff;
-  --surface-2: #eef3f8;
-  --surface-3: #dfe7f0;
-  --text: #0f1b2d;
-  --muted: #5b6b80;
-  --border: #dbe3ec;
-  --accent: #0284c7;
-  --accent-strong: #0369a1;
-  --accent-soft: #e0f2fe;
+  --surface-2: #f0f4f8;
+  --surface-3: #e1e8f0;
+  --text: #101828;
+  --muted: #667085;
+  --border: #e1e6ef;
+  --accent: #1f75e8;
+  --accent-strong: #165bc0;
+  --accent-soft: #e6f0ff;
   --accent-text: #ffffff;
+  /* Primary buttons: the bright sky-blue gradient. */
+  --glow-1: hsl(194 100% 69%);
+  --glow-2: hsl(217 100% 56%);
+  --sunset: #ff6a1a;
   --gold-soft: #fef3c7;
   --warn-soft: #fff5e1;
   --warn-text: #92400e;
@@ -107,7 +111,11 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 560px at 88% -8%, rgb(114 217 121 / 0.13), transparent 60%),
+    radial-gradient(900px 520px at -8% 18%, rgb(97 212 255 / 0.1), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: 'Inter Variable', Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 15px;
@@ -343,14 +351,22 @@ input[type='range'] {
 }
 
 .btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  border-color: transparent;
+  background-color: var(--glow-2);
+  background-image: linear-gradient(325deg, var(--glow-2) 0%, var(--glow-1) 55%, var(--glow-2) 90%);
+  background-size: 280% auto;
+  color: #fff;
+  box-shadow:
+    0 0 14px rgb(71 184 255 / 0.32),
+    0 5px 5px -1px rgb(58 125 233 / 0.22),
+    inset 3px 3px 6px rgb(175 230 255 / 0.45),
+    inset -3px -3px 6px rgb(19 95 216 / 0.3);
+  transition: background-position 0.8s ease, transform 0.05s, box-shadow 0.2s;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--accent-strong);
-  border-color: var(--accent-strong);
+  background-color: var(--glow-2);
+  background-position: right top;
 }
 
 .btn--record {
@@ -2918,27 +2934,6 @@ kbd {
   min-width: 0;
 }
 
-/* ── Footer ─────────────────────────────────────────────────────────────── */
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px 16px;
-  width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 18px 24px 28px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.footer strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
 /* ── Toast ──────────────────────────────────────────────────────────────── */
 .toast-region {
   position: fixed;
@@ -3185,10 +3180,6 @@ kbd {
 
   .main {
     padding: 14px 16px 24px;
-  }
-
-  .footer {
-    padding: 16px 16px calc(92px + env(safe-area-inset-bottom));
   }
 
   .dictionary__toolbar {
