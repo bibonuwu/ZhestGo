@@ -47,12 +47,15 @@ export function TranslatePage() {
     }
 
     if (f.commit) {
-      const { wordId, replaceLast } = f.commit;
-      const frames = recent.current.map((r) => r.v);
-      const last = session.tokens[session.tokens.length - 1];
-      if (replaceLast && last?.source === 'gesture') {
-        const { key, replaced } = session.replaceLast(wordId, 'gesture');
-        forgetGesture(replaced);
+      const { wordId, replace, source } = f.commit;
+      // Video signs are recognised from the videos; their frames do not become training samples.
+      const frames = source === 'sign' ? [] : recent.current.map((r) => r.v);
+      // Replace only recognised words: the user may have tapped or deleted words since.
+      let count = 0;
+      while (count < replace && session.tokens[session.tokens.length - 1 - count]?.source === 'gesture') count++;
+      if (count) {
+        const { key, replaced } = session.replaceLast(wordId, 'gesture', count);
+        replaced.forEach(forgetGesture);
         rememberGesture(key, wordId, frames);
       } else {
         rememberGesture(session.addWord(wordId, 'gesture'), wordId, frames);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { capitalize, glossOf, lookupWord, type AnyWord } from '../data/words';
+import { capitalize, glossOf, isLessonWord, lookupWord, type AnyWord } from '../data/words';
 import { LOCALES, useT } from '../i18n';
 import { QUICK_PHRASES, buildPredictor, frequentPhrases } from '../lang/predict';
 import { composeLocal } from '../lib/compose';
@@ -17,9 +17,9 @@ function Suggestions({ context }: { context: string[] }) {
   const t = useT();
   const history = useSession((s) => s.history);
   const addWord = useSession((s) => s.addWord);
-  const userWords = useTraining((s) => s.userWords);
   const predictor = useMemo(() => buildPredictor(history), [history]);
-  const ids = predictor.suggest(context, 6, (id) => Boolean(lookupWord(id, userWords)));
+  // Only the words of the video lessons, also when the history has older ones.
+  const ids = predictor.suggest(context, 6, isLessonWord);
   if (ids.length === 0) return null;
   return (
     <div className="suggest" aria-label={t('suggest.title')}>
@@ -27,7 +27,7 @@ function Suggestions({ context }: { context: string[] }) {
       {ids.map((id) => (
         <button key={id} className="suggest__chip" lang="kk" onClick={() => addWord(id, 'tap')}>
           <Icon name="plus" size={12} />
-          {lookupWord(id, userWords)!.kk}
+          {lookupWord(id)!.kk}
         </button>
       ))}
     </div>
@@ -122,7 +122,9 @@ export function VoiceBanner() {
   }, [online]);
 
   const covered = status === 'ready' || (engine !== 'offline' && ((serverTts && online) || browserKazakh));
-  if (browserKazakh === null || status === 'unknown' || engine === 'browser' || covered) return null;
+  if (browserKazakh === null || status === 'unknown' || covered) return null;
+  // Once downloaded, the Kazakh voice is used instead of the browser's (usually Russian) one.
+  const get = () => void download(voiceId).then((ok) => ok && engine === 'browser' && useSettings.getState().update({ engine: 'offline' }));
 
   return (
     <div className="voice-banner" role="status">
@@ -133,7 +135,7 @@ export function VoiceBanner() {
           <small>{t('voice.downloading', { p: Math.round(progress * 100) })}</small>
         </div>
       ) : (
-        <button className="btn btn--sm" disabled={!online} onClick={() => void download(voiceId)}>
+        <button className="btn btn--sm" disabled={!online} onClick={get}>
           <Icon name="download" size={15} /> {status === 'error' ? t('voice.retry') : t('voice.download')}
         </button>
       )}
@@ -192,6 +194,13 @@ export function OutputPanel() {
           </button>
           <button className="btn btn--ghost" onClick={() => void copy()}>
             <Icon name={copied ? 'check' : 'copy'} /> {copied ? t('output.copied') : t('output.copy')}
+          </button>
+          <button
+            className="btn btn--ghost output__report"
+            onClick={() => useUi.getState().openFeedback({ kind: 'phrase', text: output.text })}
+            title={t('report.button')}
+          >
+            <Icon name="flag" /> {t('report.short')}
           </button>
         </div>
       )}

@@ -38,12 +38,16 @@ if errorlevel 1 (
   if errorlevel 1 goto fail
 )
 
-echo [3/5] Сжатие новых видео жестов из папки video...
+echo [3/5] Новые видео жестов: сжатие и обучение распознавания...
 where ffmpeg >nul 2>nul
 if errorlevel 1 (
   echo     ffmpeg не найден, шаг пропущен. Уже сжатые видео опубликуются как есть.
 ) else (
   call npm run videos
+  if errorlevel 1 goto fail
+  call npm run landmarks
+  if errorlevel 1 goto fail
+  call npm run sign-model
   if errorlevel 1 goto fail
 )
 

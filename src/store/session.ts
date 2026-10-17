@@ -28,8 +28,8 @@ interface SessionStore {
   history: Phrase[];
   /** Adds a word; returns its token key. */
   addWord: (wordId: string, source: TokenSource) => string;
-  /** Replaces the last word; returns the new key and the replaced one. */
-  replaceLast: (wordId: string, source: TokenSource) => { key: string; replaced?: string };
+  /** Replaces the last `count` words with one; returns the new key and the replaced ones. */
+  replaceLast: (wordId: string, source: TokenSource, count?: number) => { key: string; replaced: string[] };
   removeToken: (key: string) => void;
   undo: () => void;
   clear: () => void;
@@ -58,11 +58,12 @@ export const useSession = create<SessionStore>()(
         return key;
       },
 
-      replaceLast: (wordId, source) => {
+      replaceLast: (wordId, source, count = 1) => {
         const tokens = get().tokens;
-        const replaced = tokens[tokens.length - 1]?.key;
+        const kept = tokens.slice(0, Math.max(0, tokens.length - count));
+        const replaced = tokens.slice(kept.length).map((t) => t.key);
         const key = newKey();
-        set({ tokens: [...tokens.slice(0, -1), { key, wordId, source }], lastActivity: Date.now() });
+        set({ tokens: [...kept, { key, wordId, source }], lastActivity: Date.now() });
         return { key, replaced };
       },
 

@@ -2159,6 +2159,110 @@ input[type='range'] {
   color: var(--record);
 }
 
+/* A take with a video: opens the take dialog */
+.take__open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.take__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgb(10 17 30 / 0.65);
+  color: #fff;
+  translate: -50% -50%;
+  pointer-events: none;
+  transition: background 0.15s;
+}
+
+.take__open:hover .take__play,
+.take__open:focus-visible .take__play {
+  background: var(--accent);
+}
+
+.take-dialog {
+  width: min(520px, calc(100% - 24px));
+}
+
+.take-dialog .modal__close {
+  color: #fff;
+}
+
+.take-dialog__media {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  background: #0a111e;
+}
+
+/* Landscape webcams and portrait phones alike: a fixed height, letterboxed. */
+.take-dialog__media video {
+  display: block;
+  width: 100%;
+  height: min(52vh, 400px);
+  object-fit: contain;
+}
+
+.take-dialog__media.is-mirrored video {
+  transform: scaleX(-1);
+}
+
+.take-dialog__empty {
+  margin: 0;
+  padding: 24px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.take-dialog__body {
+  display: grid;
+  gap: 10px;
+  padding: 20px 24px 24px;
+}
+
+.take-dialog__body h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.take-dialog__body .muted {
+  margin: 0;
+}
+
+.take-dialog__where {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.take-dialog__where .icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.take-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Selected word card */
 .train-word {
   transition: border-color 0.2s, box-shadow 0.2s;

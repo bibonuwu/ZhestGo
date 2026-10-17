@@ -1,11 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { VOCABULARY } from '../data/vocabulary';
+import { isLessonWord, LESSON_TEMPLATE_WORDS } from '../data/words';
 import { drawOverlay } from '../gesture/draw';
 import { analyzeHand } from '../gesture/hand';
 import { KnnModel } from '../gesture/knn';
 import { Recognizer, type RecognizerOutput } from '../gesture/recognizer';
+import { SignSpotter } from '../gesture/signSpotter';
+import { unpackFrames, type SignModel, type SignTemplate } from '../gesture/signTemplates';
 import type { FaceBox, HandFeatures } from '../gesture/types';
 import { VisionEngine } from '../gesture/vision';
+import { loadSignModel } from '../lib/signModel';
 import { useSettings } from '../store/settings';
 import { useTraining } from '../store/training';
 
@@ -46,9 +49,15 @@ export function useGestureEngine({ videoRef, canvasRef, running, onFrame }: Opti
   const skeleton = useSettings((s) => s.showSkeleton);
   const debug = useSettings((s) => s.showDebug);
   const samples = useTraining((s) => s.samples);
+  const takes = useTraining((s) => s.takes);
+  const [signModel, setSignModel] = useState<SignModel | null>(null);
 
-  const recognizer = useMemo(() => new Recognizer(VOCABULARY, { holdMs: 550, mode: 'both', dominant: 'right' }), []);
-  const knn = useMemo(() => (Object.keys(samples).length ? new KnnModel(samples) : null), [samples]);
+  // Only the words of the video lessons are recognised (older recordings of other words are kept, unused).
+  const recognizer = useMemo(() => new Recognizer(LESSON_TEMPLATE_WORDS, { holdMs: 550, mode: 'signs', dominant: 'right' }), []);
+  const knn = useMemo(() => {
+    const lesson = Object.fromEntries(Object.entries(samples).filter(([id]) => isLessonWord(id)));
+    return Object.keys(lesson).length ? new KnnModel(lesson) : null;
+  }, [samples]);
 
   const onFrameRef = useRef(onFrame);
   const drawOpts = useRef({ skeleton, debug });
@@ -62,6 +71,29 @@ export function useGestureEngine({ videoRef, canvasRef, running, onFrame }: Opti
   useEffect(() => {
     recognizer.knn = knn;
   }, [recognizer, knn]);
+
+  // The user's takes of lesson words are matched like the videos themselves.
+  const ownSigns = useMemo(
+    () => takes.flatMap((tk): SignTemplate[] => (tk.sign && isLessonWord(tk.wordId) ? [{ id: tk.wordId, twoHanded: tk.sign[0].length === 2, frames: unpackFrames(tk.sign) }] : [])),
+    [takes],
+  );
+
+  // The video signs: loaded with the camera; until then the other sources work alone.
+  useEffect(() => {
+    if (!running || signModel) return;
+    let cancelled = false;
+    loadSignModel()
+      .then((model) => {
+        if (!cancelled) setSignModel(model);
+      })
+      .catch((err: unknown) => console.error('[qoldau] could not load the sign model', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [running, signModel]);
+  useEffect(() => {
+    if (signModel) recognizer.signs = new SignSpotter(signModel, ownSigns);
+  }, [recognizer, signModel, ownSigns]);
 
   useEffect(() => {
     if (!running) return;

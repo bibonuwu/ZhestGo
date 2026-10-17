@@ -241,3 +241,38 @@ export const fetchLeaderboard = (size: number, me: PublicUser | null) =>
       me: mine,
     };
   });
+
+/** A report about a lesson or a phrase, or feedback about the site (components/FeedbackDialog.tsx). */
+export interface FeedbackInput {
+  kind: 'feedback' | 'report';
+  /** Chosen reason or topic id. */
+  topic: string;
+  /** What it is about: "lesson:<sign id>", "phrase:<text>" or empty for the whole site. */
+  subject: string;
+  text: string;
+  /** How to reach the sender, if they want an answer. */
+  contact: string;
+  /** Page it was sent from. */
+  page: string;
+  lang: 'kk' | 'ru' | 'en';
+}
+
+/**
+ * Stores it in `feedback/{id}`. Anyone may send one; nobody can read them
+ * from the site — the team reads them in the Firebase console (firestore.rules).
+ */
+export const sendFeedback = (input: FeedbackInput) =>
+  guard(async () => {
+    const { auth, db, F } = await firebase();
+    await F.addDoc(F.collection(db, 'feedback'), {
+      kind: input.kind,
+      topic: input.topic.slice(0, 40),
+      subject: input.subject.slice(0, 300),
+      text: input.text.trim().slice(0, 1000),
+      contact: input.contact.trim().slice(0, 120),
+      page: input.page.slice(0, 60),
+      lang: input.lang,
+      uid: auth.currentUser?.uid ?? null,
+      createdAt: F.serverTimestamp(),
+    });
+  });

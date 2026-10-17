@@ -24,6 +24,8 @@
     "test:watch": "vitest",
     "docs:words": "tsx scripts/export-words.ts",
     "videos": "tsx scripts/compress-videos.ts",
+    "landmarks": "tsx scripts/extract-landmarks.ts",
+    "sign-model": "tsx scripts/build-sign-model.ts",
     "build:firebase": "tsc -b && vite build --mode firebase",
     "deploy": "npm run build:firebase && firebase deploy --only hosting,firestore"
   },

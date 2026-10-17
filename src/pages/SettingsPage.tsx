@@ -401,7 +401,8 @@ function RecognitionSection() {
       </Row>
       <Row label={t('settings.mode')} hint={t('settings.mode.hint')} htmlFor="settings-mode">
         <Select id="settings-mode" value={s.mode} onChange={(mode) => s.update({ mode: mode as Settings['mode'] })}>
-          <option value="both">{t('settings.mode.both')}</option>
+          <option value="signs">{t('settings.mode.signs')}</option>
+          <option value="all">{t('settings.mode.all')}</option>
           <option value="templates">{t('settings.mode.templates')}</option>
           <option value="custom">{t('settings.mode.custom')}</option>
         </Select>
@@ -587,6 +588,7 @@ function OfflineSection() {
   const t = useT();
   const lang = useSettings((s) => s.lang);
   const voiceId = useSettings((s) => s.voiceId);
+  const engine = useSettings((s) => s.engine);
   const update = useSettings((s) => s.update);
   const status = useVoice((s) => s.status);
   const progress = useVoice((s) => s.progress);
@@ -609,6 +611,9 @@ function OfflineSection() {
   useEffect(() => {
     void readStorage();
   }, [status]);
+
+  // A downloaded voice is what the visitor wants to hear: the browser's own voice (often Russian) would hide it.
+  const chooseVoice = (id: VoiceId) => update({ voiceId: id, ...(engine === 'browser' ? { engine: 'offline' as const } : {}) });
 
   const appCached = offlineReady || Boolean(navigator.serviceWorker?.controller);
   const installed =
@@ -638,7 +643,12 @@ function OfflineSection() {
                 return (
                   <div key={id} className={`voice-option${voiceId === id ? ' is-active' : ''}`}>
                     <label>
-                      <input type="radio" name="offline-voice" checked={voiceId === id} onChange={() => update({ voiceId: id })} />
+                      <input
+                        type="radio"
+                        name="offline-voice"
+                        checked={voiceId === id}
+                        onChange={() => (st === 'ready' ? chooseVoice(id) : update({ voiceId: id }))}
+                      />
                       <span>{VOICES[id].label[lang]}</span>
                     </label>
                     {st === 'ready' ? (
@@ -660,7 +670,7 @@ function OfflineSection() {
                         type="button"
                         className="btn btn--sm"
                         disabled={!online}
-                        onClick={() => void download(id).then((ok) => ok && update({ voiceId: id }))}
+                        onClick={() => void download(id).then((ok) => ok && chooseVoice(id))}
                       >
                         <Icon name="download" size={15} />{' '}
                         {st === 'error' ? t('voice.retry') : engineCached ? t('voice.downloadMore') : t('voice.download')}

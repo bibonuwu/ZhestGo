@@ -23,6 +23,9 @@ const TranslatePage = lazy(() => import('./pages/TranslatePage').then((m) => ({ 
 const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
 const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+// Rarely opened dialogs with long texts.
+const FeedbackDialog = lazy(() => import('./components/FeedbackDialog').then((m) => ({ default: m.FeedbackDialog })));
+const TermsDialog = lazy(() => import('./components/TermsDialog').then((m) => ({ default: m.TermsDialog })));
 
 const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'leaderboard', 'train', 'settings', 'privacy', 'login', 'register'];
 
@@ -63,11 +66,18 @@ function Toast() {
 function Dialogs() {
   const dialog = useUi((s) => s.dialog);
   const lesson = useUi((s) => s.lesson);
-  const { closeDialog, closeLesson } = useUi.getState();
+  const feedback = useUi((s) => s.feedback);
+  const termsOpen = useUi((s) => s.termsOpen);
+  const { closeDialog, closeLesson, closeFeedback, setTermsOpen } = useUi.getState();
+  // In this order: a report opens over its lesson, the terms over everything.
   return (
     <>
       {dialog === 'donate' && <DonateDialog onClose={closeDialog} />}
       {lesson && <LessonDialog id={lesson} onClose={closeLesson} />}
+      <Suspense fallback={null}>
+        {feedback && <FeedbackDialog target={feedback} onClose={closeFeedback} />}
+        {termsOpen && <TermsDialog onClose={() => setTermsOpen(false)} />}
+      </Suspense>
     </>
   );
 }

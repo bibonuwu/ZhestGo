@@ -117,7 +117,7 @@ export function rotate(points: readonly Point3[], ax: number, ay: number, az: nu
 export function toRawHand(
   world: readonly Point3[],
   at: { x: number; y: number },
-  label: RawHand['label'] = 'Left',
+  label: RawHand['label'] = 'Right',
   pxPerMetre = 1400,
   frame = { width: 640, height: 480 },
 ): RawHand {

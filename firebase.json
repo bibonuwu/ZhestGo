@@ -26,6 +26,15 @@
         ]
       },
       {
+        "source": "/assets/*.data",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/octet-stream"
+          }
+        ]
+      },
+      {
         "source": "/signs/**",
         "headers": [
           {

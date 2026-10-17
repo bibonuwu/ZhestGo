@@ -1,5 +1,6 @@
 import { Icon, type IconName } from '../components/Icon';
 import { PageHead } from '../components/PageHead';
+import { TermsLink } from '../components/TermsLink';
 import { useT, type MessageKey } from '../i18n';
 import { CloudError } from '../lib/cloud';
 import { useAuth } from '../store/auth';
@@ -12,6 +13,7 @@ const SECTIONS: Array<{ icon: IconName; title: MessageKey; text: MessageKey }> =
   { icon: 'cookie', title: 'privacy.cookie.title', text: 'privacy.cookie.text' },
   { icon: 'server', title: 'privacy.local.title', text: 'privacy.local.text' },
   { icon: 'video', title: 'privacy.camera.title', text: 'privacy.camera.text' },
+  { icon: 'flag', title: 'privacy.feedback.title', text: 'privacy.feedback.text' },
 ];
 
 export function PrivacyPage() {
@@ -41,6 +43,13 @@ export function PrivacyPage() {
   return (
     <div className="page privacy">
       <PageHead icon="shield" eyebrow="Qoldau" title={t('privacy.title')} sub={t('privacy.intro')} />
+
+      <p className="notice notice--info privacy__terms">
+        <Icon name="info" size={17} />
+        <span>
+          {t('privacy.terms')} <TermsLink />
+        </span>
+      </p>
 
       <div className="privacy__grid">
         {SECTIONS.map((s) => (

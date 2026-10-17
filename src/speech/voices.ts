@@ -53,26 +53,36 @@ export async function isVoiceReady(id: VoiceId): Promise<boolean> {
   return hits.every(Boolean);
 }
 
+/** The start of an HTML page: what a single-page host answers for a missing file. */
+const looksLikeHtml = (bytes: Uint8Array): boolean =>
+  /^\s*<(!doctype html|html)/i.test(new TextDecoder().decode(bytes.subarray(0, 64)));
+
 async function fetchWithProgress(url: string, onBytes: (n: number) => void): Promise<Blob> {
   const res = await fetch(url);
-  // The dev server answers unknown paths with index.html.
-  if (!res.ok || (res.headers.get('content-type') ?? '').includes('text/html')) {
-    throw new Error(`${url}: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  // A missing file comes back as the site's index.html (dev server, Firebase rewrites). The type
+  // alone does not tell: Firebase Hosting sends compressed .data files as text/html too.
+  const html = (res.headers.get('content-type') ?? '').includes('text/html');
+  const chunks: Uint8Array[] = [];
+  if (res.body) {
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (html && !chunks.length && looksLikeHtml(value)) {
+        await reader.cancel();
+        throw new Error(`${url}: not found`);
+      }
+      chunks.push(value);
+      onBytes(value.length);
+    }
+  } else {
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (html && looksLikeHtml(bytes)) throw new Error(`${url}: not found`);
+    chunks.push(bytes);
+    onBytes(bytes.length);
   }
-  if (!res.body) {
-    const blob = await res.blob();
-    onBytes(blob.size);
-    return blob;
-  }
-  const reader = res.body.getReader();
-  const chunks: BlobPart[] = [];
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    onBytes(value.length);
-  }
-  return new Blob(chunks, { type: res.headers.get('content-type') ?? 'application/octet-stream' });
+  return new Blob(chunks as BlobPart[], { type: html ? 'application/octet-stream' : (res.headers.get('content-type') ?? 'application/octet-stream') });
 }
 
 /** Downloads the voice into Cache Storage. `onProgress` receives 0…1. */

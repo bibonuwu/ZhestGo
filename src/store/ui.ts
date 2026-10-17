@@ -9,6 +9,9 @@ export interface InstallPromptEvent extends Event {
 /** A dialog over the page. */
 export type Dialog = 'donate';
 
+/** What a feedback message is about: the site in general, a video lesson or a spoken phrase. */
+export type FeedbackTarget = { kind: 'site' } | { kind: 'lesson'; id: string; word: string } | { kind: 'phrase'; text: string };
+
 interface UiStore {
   /** Camera switched on during this visit; other pages start it without asking again. */
   cameraOn: boolean;
@@ -25,6 +28,10 @@ interface UiStore {
   lesson: string | null;
   /** Lesson ids the open lesson steps through with “Previous” / “Next”. */
   lessonList: readonly string[];
+  /** The feedback / report form is open (it can open over a lesson). */
+  feedback: FeedbackTarget | null;
+  /** The Terms of Use and Privacy Policy are open (over any other dialog). */
+  termsOpen: boolean;
   /** Page to return to after signing in (the hash it was opened from). */
   authReturn: string;
   /** The shared chat panel is open (it stays open across pages). */
@@ -36,6 +43,9 @@ interface UiStore {
   closeDialog: () => void;
   openLesson: (id: string, list?: readonly string[]) => void;
   closeLesson: () => void;
+  openFeedback: (target?: FeedbackTarget) => void;
+  closeFeedback: () => void;
+  setTermsOpen: (open: boolean) => void;
   setCameraOn: (on: boolean) => void;
   showToast: (text: string) => void;
 }
@@ -79,6 +89,8 @@ export const useUi = create<UiStore>((set) => ({
   dialog: null,
   lesson: null,
   lessonList: [],
+  feedback: null,
+  termsOpen: false,
   authReturn: '',
   chatOpen: typeof window === 'undefined' ? false : takeReopenChat(),
   setChatOpen: (chatOpen) => set({ chatOpen }),
@@ -91,6 +103,9 @@ export const useUi = create<UiStore>((set) => ({
   closeDialog: () => set({ dialog: null }),
   openLesson: (lesson, list) => set((s) => ({ lesson, lessonList: list ?? s.lessonList })),
   closeLesson: () => set({ lesson: null }),
+  openFeedback: (target = { kind: 'site' }) => set({ feedback: target }),
+  closeFeedback: () => set({ feedback: null }),
+  setTermsOpen: (termsOpen) => set({ termsOpen }),
   setCameraOn: (cameraOn) => set({ cameraOn }),
   showToast: (text) => {
     clearTimeout(toastTimer);

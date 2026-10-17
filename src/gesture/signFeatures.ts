@@ -83,6 +83,67 @@ export function signFrame(t: number, hands: readonly HandFeatures[], face: FaceB
   return { t, hands: ordered.map((h) => signHand(h, face)) };
 }
 
+/** A hand lost for up to this long while the other one is still seen (they overlap) is kept, ms. */
+const KEEP_LOST_HAND_MS = 250;
+
+/**
+ * MediaPipe often loses one of two overlapping hands for a few frames. When
+ * `frame` has one hand and `pair` — the last frame with both — is recent,
+ * the lost hand is assumed to be where it was.
+ */
+export function keepLostHand(frame: SignFrame, pair: SignFrame | null): void {
+  if (!pair || frame.hands.length !== 1 || frame.t - pair.t > KEEP_LOST_HAND_MS) return;
+  const seen = frame.hands[0].loc;
+  if (!seen) return;
+  const away = (h: SignHand) => (h.loc ? Math.hypot(h.loc[0] - seen[0], h.loc[1] - seen[1]) : Infinity);
+  const [a, b] = pair.hands;
+  const lost = away(a) <= away(b) ? b : a;
+  const hands = [frame.hands[0], { ...lost, vel: [...lost.vel] }];
+  frame.hands = hands.sort((x, y) => (x.loc?.[0] ?? 0) - (y.loc?.[0] ?? 0));
+}
+
+/**
+ * Webcam landmarks jitter from frame to frame (much more than in the lesson
+ * videos), so each frame is averaged with the frames of this last stretch, ms.
+ */
+export const SMOOTH_MS = 100;
+
+const mean = (rows: readonly (readonly number[])[]): number[] => rows[0].map((_, i) => rows.reduce((s, r) => s + r[i], 0) / rows.length);
+
+const normalized = (v: number[]): number[] => {
+  const l = Math.hypot(...v) || 1e-9;
+  return v.map((x) => x / l);
+};
+
+function averageHands(hands: readonly SignHand[]): SignHand {
+  const orient = mean(hands.map((h) => h.orient));
+  const locs = hands.map((h) => h.loc);
+  return {
+    shape: mean(hands.map((h) => h.shape)),
+    orient: [...normalized(orient.slice(0, 3)), ...normalized(orient.slice(3))],
+    loc: locs.every(Boolean) ? mean(locs as number[][]) : hands[hands.length - 1].loc,
+    vel: [0, 0],
+  };
+}
+
+/**
+ * `frame` averaged with the earlier frames of the last SMOOTH_MS that show
+ * the same number of hands (`recent`, oldest first, may include `frame`).
+ * Two hands are paired by position, in case they swapped places.
+ */
+export function smoothFrame(frame: SignFrame, recent: readonly SignFrame[]): SignFrame {
+  const same = recent.filter((f) => f !== frame && frame.t - f.t < SMOOTH_MS && f.t <= frame.t && f.hands.length === frame.hands.length);
+  if (!same.length || !frame.hands.length) return frame;
+  const near = (a: SignHand, b: SignHand) => (a.loc && b.loc ? Math.hypot(a.loc[0] - b.loc[0], a.loc[1] - b.loc[1]) : 0);
+  const paired = same.map((f) => {
+    if (f.hands.length !== 2) return f.hands;
+    const [a, b] = f.hands;
+    const [x, y] = frame.hands;
+    return near(a, y) + near(b, x) < near(a, x) + near(b, y) ? [b, a] : f.hands;
+  });
+  return { t: frame.t, hands: frame.hands.map((h, i) => averageHands([...paired.map((hands) => hands[i]), h])) };
+}
+
 /** Velocity is measured over this interval, ms. */
 export const VELOCITY_LAG_MS = 133;
 /** Speed (face widths per second) that maps to 0.5: faster movements all look "fast". */
@@ -148,13 +209,20 @@ function rms(a: readonly number[], b: readonly number[]): number {
   return Math.sqrt(s / a.length);
 }
 
-/** Relative weight of each part of the hand description. */
-const WEIGHTS = { shape: 1, orient: 1, loc: 1, vel: 0.5 };
+/**
+ * Relative weight of each part of the hand description. Orientation and
+ * position vary most from person to person, so they count a little less;
+ * velocity tells a held sign from a hand passing by on its way down.
+ */
+const WEIGHTS = { shape: 1, orient: 0.7, loc: 0.8, vel: 1 };
 const WEIGHT_SUM = WEIGHTS.shape + WEIGHTS.orient + WEIGHTS.loc + WEIGHTS.vel;
 /** Location difference assumed when the face is not visible. */
 const NO_LOC = 0.5;
-/** Cost of a frame where the camera sees no hands at all. */
-const NO_HANDS = 1.5;
+/**
+ * A camera frame without hands is never part of a sign (the matcher can step
+ * over a dropout of a frame or two).
+ */
+const NO_HANDS = Infinity;
 /** Extra cost when a two-handed sign is shown with one hand. */
 const MISSING_HAND = 1;
 
@@ -172,7 +240,8 @@ export function handDistance(u: SignHand, t: SignHand): number {
 /**
  * How different a camera frame is from a template frame (0 = identical).
  * For a one-handed sign either hand may be the signing one; for a
- * two-handed sign the hands are compared left with left, right with right.
+ * two-handed sign the hands are compared left with left, right with right
+ * (or crossed, if that fits better).
  */
 export function frameDistance(u: SignFrame, t: SignFrame): number {
   const U = u.hands;
@@ -184,13 +253,14 @@ export function frameDistance(u: SignFrame, t: SignFrame): number {
     return best;
   }
   if (U.length === 1) return (Math.min(handDistance(U[0], T[0]), handDistance(U[0], T[1])) + MISSING_HAND) / 2;
-  return (handDistance(U[0], T[0]) + handDistance(U[1], T[1])) / 2;
+  // Hands that cross or overlap swap places in the image: try both pairings.
+  return Math.min(handDistance(U[0], T[0]) + handDistance(U[1], T[1]), handDistance(U[0], T[1]) + handDistance(U[1], T[0])) / 2;
 }
 
 /** Compact storage of a hand: shape, orient, loc, vel in one array. */
 export function packHand(h: SignHand, digits = 3): number[] {
   const k = 10 ** digits;
-  return [...h.shape, ...h.orient, ...(h.loc ?? [0, 0, 0, 0]), ...h.vel].map((v) => Math.round(v * k) / k);
+  return [...h.shape, ...h.orient, ...(h.loc ?? [0, 0, 0, 0]), ...h.vel].map((v) => Math.round(v * k) / k || 0);
 }
 
 export function unpackHand(a: readonly number[]): SignHand {

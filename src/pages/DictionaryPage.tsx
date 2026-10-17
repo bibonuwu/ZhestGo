@@ -5,7 +5,8 @@ import { PageHead } from '../components/PageHead';
 import { describeGesture } from '../data/gestureText';
 import { SIGN_BY_WORD, SIGNS } from '../data/signs';
 import { CATEGORIES, type CategoryId, type TopicIcon } from '../data/vocabulary';
-import { capitalize, glossOf, matchesQuery, useAllWords, type AnyWord } from '../data/words';
+import type { WordEntry } from '../data/vocabulary';
+import { capitalize, glossOf, LESSON_WORDS, matchesQuery } from '../data/words';
 import { useT } from '../i18n';
 import { signPoster } from '../lib/media';
 import { speakText } from '../lib/phrase';
@@ -14,13 +15,16 @@ import { useSettings } from '../store/settings';
 import { useTraining } from '../store/training';
 import { useUi } from '../store/ui';
 
-type Filter = CategoryId | 'custom' | 'all';
+type Filter = CategoryId | 'all';
 
-function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number }) {
+function WordCard({ word, sampleCount }: { word: WordEntry; sampleCount: number }) {
   const t = useT();
   const lang = useSettings((s) => s.lang);
+  const templates = useSettings((s) => s.mode === 'all' || s.mode === 'templates');
   const title = capitalize(word.kk) + (word.question ? '?' : '');
   const sign = SIGN_BY_WORD.get(word.id);
+  // The camera reads the sign from the video unless Qoldau's templates are switched on.
+  const gesture = word.gesture && (templates || !sign) ? word.gesture : null;
   const category = CATEGORIES.find((c) => c.id === word.category);
 
   const add = () => {
@@ -72,16 +76,16 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
         </button>
       </div>
 
-      {word.gesture ? (
+      {gesture ? (
         <div className="word-card__how">
           <span className="label">{t('dict.how')}</span>
-          <GestureVisual spec={word.gesture} lang={lang} />
-          <p className="word-card__desc">{describeGesture(word.gesture, lang)}</p>
+          <GestureVisual spec={gesture} lang={lang} />
+          <p className="word-card__desc">{describeGesture(gesture, lang)}</p>
         </div>
       ) : (
-        <p className="word-card__desc">{t('dict.customWord')}</p>
+        <p className="word-card__desc">{t('dict.fromVideo')}</p>
       )}
-      {word.hint && (
+      {gesture && word.hint && (
         <p className="word-card__hint">
           <Icon name="info" size={14} />
           {word.hint[lang]}
@@ -103,9 +107,8 @@ function WordCard({ word, sampleCount }: { word: AnyWord; sampleCount: number })
 export function DictionaryPage() {
   const t = useT();
   const lang = useSettings((s) => s.lang);
-  // Only the words that have a video lesson are listed; recognition still knows all of them.
-  const allWords = useAllWords();
-  const words = useMemo(() => allWords.filter((w) => SIGN_BY_WORD.has(w.id)), [allWords]);
+  // Only the words that have a video lesson.
+  const words = LESSON_WORDS;
   const samples = useTraining((s) => s.samples);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
@@ -117,10 +120,10 @@ export function DictionaryPage() {
     return c;
   }, [words]);
 
-  const visible = useMemo(() => {
-    const q = deferredQuery.trim().toLocaleLowerCase();
-    return words.filter((w) => (filter === 'all' || w.category === filter) && (!q || matchesQuery(w, q)));
-  }, [words, filter, deferredQuery]);
+  const q = deferredQuery.trim().toLocaleLowerCase();
+  const visible = useMemo(() => words.filter((w) => (filter === 'all' || w.category === filter) && (!q || matchesQuery(w, q))), [words, filter, q]);
+  // A searched word that is not among the lessons at all (not just outside the chosen category).
+  const unknownWord = q !== '' && !words.some((w) => matchesQuery(w, q));
 
   const filters: Array<{ id: Filter; label: string; icon?: TopicIcon }> = [
     { id: 'all', label: t('dict.all') },
@@ -162,7 +165,14 @@ export function DictionaryPage() {
           <span className="empty-state__icon">
             <Icon name="search" size={22} />
           </span>
-          <p>{t('dict.nothing')}</p>
+          {unknownWord ? (
+            <>
+              <p className="empty-state__title">{t('dict.notYet', { w: deferredQuery.trim() })}</p>
+              <p>{t('dict.notYet.sub')}</p>
+            </>
+          ) : (
+            <p>{t('dict.nothing')}</p>
+          )}
           <button
             type="button"
             className="btn btn--sm"

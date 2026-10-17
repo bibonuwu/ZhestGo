@@ -91,6 +91,14 @@ export function LessonDialog({ id, onClose }: { id: string; onClose: () => void 
                 {index + 1} / {list.length}
               </span>
             )}
+            <button
+              type="button"
+              className="lesson__report"
+              onClick={() => useUi.getState().openFeedback({ kind: 'lesson', id: sign.id, word: sign.kk })}
+              title={t('report.button')}
+            >
+              <Icon name="flag" size={14} /> {t('report.short')}
+            </button>
           </div>
 
           <div className="lesson__info">

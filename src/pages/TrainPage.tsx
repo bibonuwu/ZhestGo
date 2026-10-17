@@ -1,16 +1,18 @@
-import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent } from 'react';
 import { CameraStage } from '../components/CameraStage';
 import { GestureVisual } from '../components/GestureVisual';
 import { Icon } from '../components/Icon';
 import { PageHead, Steps } from '../components/PageHead';
+import { TakeDialog } from '../components/TakeDialog';
 import { describeGesture } from '../data/gestureText';
-import { capitalize, glossOf, lookupWord, matchesQuery, useAllWords, type AnyWord } from '../data/words';
+import type { WordEntry } from '../data/vocabulary';
+import { capitalize, glossOf, isLessonWord, LESSON_WORDS, lookupWord, matchesQuery } from '../data/words';
 import { drawTrail } from '../gesture/draw';
 import type { CandidateSource } from '../gesture/recognizer';
 import type { EngineFrame } from '../hooks/useGestureEngine';
 import { useT, type MessageKey, type Translate } from '../i18n';
 import { beep, type Cue } from '../lib/beep';
-import { RECORD_MS, TakeCapture } from '../lib/take';
+import { ClipRecorder, RECORD_MS, TakeCapture } from '../lib/take';
 import { useSettings } from '../store/settings';
 import { useTraining, type Take, type UserWord } from '../store/training';
 import { useUi } from '../store/ui';
@@ -42,10 +44,13 @@ interface Flash {
 interface Check {
   wordId: string;
   source: CandidateSource;
+  /** Recognised from the user's own takes. */
+  own: boolean;
 }
 
 const LEVEL_KEYS = ['train.level.none', 'train.level.low', 'train.level.good', 'train.level.great'] as const;
 const FILTER_KEYS = { all: 'train.filter.all', todo: 'train.filter.todo', done: 'train.filter.done' } as const;
+const VIA = { custom: 'train.check.viaCustom', template: 'train.check.viaTemplate', sign: 'train.check.viaSign' } as const;
 
 function levelOf(frames: number): Level {
   if (frames <= 0) return 0;
@@ -105,7 +110,7 @@ function Dots({ frames }: { frames: number }) {
 }
 
 interface TakeStripProps {
-  word: AnyWord;
+  word: WordEntry;
   takes: Take[];
   earlier: number;
   phase: Phase;
@@ -114,10 +119,11 @@ interface TakeStripProps {
   slots: number;
   t: Translate;
   onRemove: (id: string) => void;
+  onOpen: (take: Take) => void;
 }
 
 /** This visit's takes of the selected word, the take being recorded and the ones still planned. */
-function TakeStrip({ word, takes, earlier, phase, countdown, captured, slots, t, onRemove }: TakeStripProps) {
+function TakeStrip({ word, takes, earlier, phase, countdown, captured, slots, t, onRemove, onOpen }: TakeStripProps) {
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     const list = listRef.current;
@@ -154,7 +160,18 @@ function TakeStrip({ word, takes, earlier, phase, countdown, captured, slots, t,
           return (
             <li key={take.id} className="take">
               <div className="take__media">
-                {take.thumb ? <img src={take.thumb} alt={t('train.take', { n: i + 1 })} /> : <Icon name="hand" size={22} />}
+                {take.video ? (
+                  <button type="button" className="take__open" onClick={() => onOpen(take)} aria-label={`${t('train.take', { n: i + 1 })}: ${t('train.watchTake')}`}>
+                    {take.thumb ? <img src={take.thumb} alt="" /> : <Icon name="hand" size={22} />}
+                    <span className="take__play" aria-hidden="true">
+                      <Icon name="play" size={14} />
+                    </span>
+                  </button>
+                ) : take.thumb ? (
+                  <img src={take.thumb} alt={t('train.take', { n: i + 1 })} />
+                ) : (
+                  <Icon name="hand" size={22} />
+                )}
                 <span className="take__num">{i + 1}</span>
                 <button className="take__remove" onClick={() => onRemove(take.id)} title={t('train.removeTake')} aria-label={t('train.removeTake')}>
                   <Icon name="x" size={14} />
@@ -239,7 +256,7 @@ function CheckRow({
       <>
         <Icon name="check" size={16} />
         <strong>{t('train.check.ok')}</strong>
-        <span>{t(check.source === 'custom' ? 'train.check.viaCustom' : 'train.check.viaTemplate')}</span>
+        <span>{t(check.own ? 'train.check.viaCustom' : VIA[check.source])}</span>
       </>
     );
   } else {
@@ -269,10 +286,11 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
   const beeps = useSettings((s) => s.trainBeeps);
   const updateSettings = useSettings((s) => s.update);
   const cameraOn = useUi((s) => s.cameraOn);
-  const words = useAllWords();
-  const { samples, userWords, takes, addTake, removeTake, clearWord, addUserWord, deleteUserWord, exportData, importData, resetAll } = useTraining();
+  // Only the words of the video lessons: the camera knows what they look like.
+  const words = LESSON_WORDS;
+  const { samples, userWords, takes, addTake, removeTake, clearWord, exportData, importData, resetAll } = useTraining();
 
-  const [selectedId, setSelectedId] = useState(() => (initialWord && lookupWord(initialWord) ? initialWord : words[0].id));
+  const [selectedId, setSelectedId] = useState(() => (initialWord && isLessonWord(initialWord) ? initialWord : words[0].id));
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [filter, setFilter] = useState<Filter>('all');
@@ -284,7 +302,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
   const [check, setCheck] = useState<Check | null>(null);
   const [verifiedId, setVerifiedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [newKk, setNewKk] = useState('');
+  const [openTake, setOpenTake] = useState<Take | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -292,6 +310,8 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
   const cameraRef = useRef<HTMLDivElement>(null);
 
   const capture = useRef<TakeCapture | null>(null);
+  /** The video of the take being recorded. */
+  const clip = useRef<ClipRecorder | null>(null);
   const readyRef = useRef(false);
   const checkRef = useRef<{ check: Check | null; at: number }>({ check: null, at: 0 });
   const latest = useRef({ phase, selectedId, run, series, mirror, beeps });
@@ -303,7 +323,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
     if (latest.current.beeps) beep(c);
   };
 
-  const selected = lookupWord(selectedId, userWords) ?? words[0];
+  const selected = words.find((w) => w.id === selectedId) ?? words[0];
   const frames = samples[selected.id]?.length ?? 0;
   const level = levelOf(frames);
   const wordTakes = takes.filter((tk) => tk.wordId === selected.id);
@@ -311,6 +331,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
 
   const q = deferredQuery.trim().toLocaleLowerCase();
   const found = words.filter((w) => !q || matchesQuery(w, q));
+  const unknownWord = q !== '' && found.length === 0;
   const counts = { all: found.length, todo: 0, done: 0 };
   for (const w of found) counts[samples[w.id]?.length ? 'done' : 'todo']++;
   const listed = filter === 'all' ? found : found.filter((w) => Boolean(samples[w.id]?.length) === (filter === 'done'));
@@ -344,14 +365,23 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
     setPhase('countdown');
   };
 
+  /** Stops the video of the take; resolves to the clip. */
+  const stopClip = (): Promise<Blob | null> => {
+    const recorder = clip.current;
+    clip.current = null;
+    return recorder ? recorder.stop() : Promise.resolve(null);
+  };
+
   const cancelSeries = () => {
     capture.current = null;
+    void stopClip();
     setPhase('idle');
   };
 
   const finishTake = () => {
     const cap = capture.current;
     capture.current = null;
+    const video = stopClip();
     if (!cap) return;
     const { selectedId: wordId, run: current, mirror: mirrored } = latest.current;
     const ok = cap.vectors.length >= MIN_FRAMES;
@@ -361,7 +391,8 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
       setPhase('idle');
       return;
     }
-    addTake(wordId, cap.vectors, { thumb: cap.thumbnail(mirrored), coverage: cap.coverage });
+    const id = addTake(wordId, cap.vectors, { thumb: cap.thumbnail(mirrored), coverage: cap.coverage, sign: cap.sign() });
+    void video.then((blob) => blob && useTraining.getState().attachVideo(id, blob));
     if (current.take + 1 < current.total) {
       // The countdown tick right after is the cue for the next take.
       setRun({ ...current, take: current.take + 1 });
@@ -370,17 +401,19 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
     } else {
       cue('done');
       setPhase('idle');
+      useUi.getState().showToast(t('train.savedWhere'));
     }
   };
 
   useEffect(() => {
-    if (initialWord && lookupWord(initialWord)) setSelectedId(initialWord);
+    if (initialWord && isLessonWord(initialWord)) setSelectedId(initialWord);
   }, [initialWord]);
 
   useEffect(() => {
     if (cameraOn) return;
     readyRef.current = false;
     capture.current = null;
+    void stopClip();
     setReady(false);
     setPhase('idle');
   }, [cameraOn]);
@@ -389,6 +422,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
     if (phase === 'countdown') {
       if (countdown === 0) {
         capture.current = new TakeCapture(performance.now());
+        clip.current = ClipRecorder.start(videoRef.current);
         clearTrail();
         setCaptured(0);
         setPhase('recording');
@@ -452,8 +486,8 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
     const hit = f.commit ?? (f.candidate?.blocked ? f.candidate : null);
     const state = checkRef.current;
     if (hit) {
-      if (state.check?.wordId !== hit.wordId || state.check.source !== hit.source) {
-        state.check = { wordId: hit.wordId, source: hit.source };
+      if (state.check?.wordId !== hit.wordId || state.check.source !== hit.source || state.check.own !== Boolean(hit.own)) {
+        state.check = { wordId: hit.wordId, source: hit.source, own: Boolean(hit.own) };
         setCheck(state.check);
         if (hit.wordId === latest.current.selectedId) {
           setVerifiedId(hit.wordId);
@@ -521,14 +555,6 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  const submitNewWord = (e: FormEvent) => {
-    e.preventDefault();
-    if (!newKk.trim()) return;
-    const id = addUserWord(newKk);
-    selectWord(id);
-    setNewKk('');
-  };
 
   const download = () => {
     const blob = new Blob([JSON.stringify(exportData())], { type: 'application/json' });
@@ -655,6 +681,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
               removeTake(id);
               useUi.getState().showToast(t('train.takeRemoved'));
             }}
+            onOpen={setOpenTake}
           />
           <div className="train__notes">
             <p className="notice">{t('train.intro')}</p>
@@ -678,14 +705,14 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
 
             <Meter frames={frames} t={t} />
 
-            {selected.gesture ? (
+            {selected.gesture && (mode === 'all' || mode === 'templates') ? (
               <div className="train-word__template">
                 <span className="label">{t('train.template')}</span>
                 <GestureVisual spec={selected.gesture} lang={lang} />
                 <p className="word-card__desc">{describeGesture(selected.gesture, lang)}</p>
               </div>
             ) : (
-              <p className="muted train-word__none">{t('train.noTemplate')}</p>
+              <p className="muted train-word__none">{t('train.fromVideo')}</p>
             )}
 
             <div className="train-controls">
@@ -768,18 +795,6 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
               </span>
             </p>
             <p className="hint">{t('train.tip')}</p>
-
-            {selected.category === 'custom' && idle && (
-              <button
-                className="btn btn--ghost btn--sm btn--danger"
-                onClick={() => {
-                  deleteUserWord(selected.id);
-                  selectWord(words[0].id);
-                }}
-              >
-                <Icon name="trash" size={14} /> {t('train.deleteWord')}
-              </button>
-            )}
           </section>
 
           <section className="card train-list">
@@ -815,18 +830,18 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
                   </li>
                 );
               })}
-              {listed.length === 0 && <li className="empty word-list__empty">{t('dict.nothing')}</li>}
+              {listed.length === 0 && (
+                <li className="empty word-list__empty">
+                  {unknownWord ? (
+                    <>
+                      <strong>{t('dict.notYet')}</strong> {t('dict.notYet.sub')}
+                    </>
+                  ) : (
+                    t('dict.nothing')
+                  )}
+                </li>
+              )}
             </ul>
-          </section>
-
-          <section className="card train-new">
-            <h2 className="card__title">{t('train.newWord')}</h2>
-            <form className="new-word" onSubmit={submitNewWord}>
-              <input value={newKk} onChange={(e) => setNewKk(e.target.value)} placeholder={t('train.kk')} aria-label={t('train.kk')} lang="kk" maxLength={80} required />
-              <button className="btn" type="submit">
-                <Icon name="plus" /> {t('train.add')}
-              </button>
-            </form>
           </section>
 
           <section className="card train-data">
@@ -836,7 +851,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
             </div>
             <p className="muted">{t('train.stats', { w: trainedWords, t: words.length, n: totalSamples })}</p>
             <div className="data-actions">
-              <button className="btn btn--sm" onClick={download} disabled={!totalSamples && !userWords.length}>
+              <button className="btn btn--sm" onClick={download} disabled={!totalSamples && !takes.length && !userWords.length}>
                 <Icon name="download" size={15} /> {t('train.export')}
               </button>
               <button className="btn btn--sm" onClick={() => fileInput.current?.click()}>
@@ -845,7 +860,7 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
               <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={(e) => void upload(e)} />
               <button
                 className="btn btn--sm btn--ghost btn--danger"
-                disabled={!totalSamples && !userWords.length}
+                disabled={!totalSamples && !takes.length && !userWords.length}
                 onClick={() => {
                   if (window.confirm(t('train.confirmReset'))) resetAll();
                 }}
@@ -856,6 +871,20 @@ export function TrainPage({ initialWord }: { initialWord?: string }) {
           </section>
         </aside>
       </div>
+      {openTake && (
+        <TakeDialog
+          take={openTake}
+          word={words.find((w) => w.id === openTake.wordId) ?? selected}
+          number={wordTakes.findIndex((tk) => tk.id === openTake.id) + 1}
+          mirror={mirror}
+          onClose={() => setOpenTake(null)}
+          onRemove={() => {
+            removeTake(openTake.id);
+            setOpenTake(null);
+            useUi.getState().showToast(t('train.takeRemoved'));
+          }}
+        />
+      )}
     </div>
   );
 }

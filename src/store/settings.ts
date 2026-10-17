@@ -54,7 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'light',
   dominant: 'right',
   holdMs: 550,
-  mode: 'both',
+  mode: 'signs',
   autoSpeak: true,
   pauseMs: 2500,
   speakWords: false,
@@ -87,7 +87,7 @@ export const useSettings = create<SettingsStore>()(
     }),
     {
       name: 'qoldau.settings',
-      version: 3,
+      version: 4,
       partialize: ({ update: _update, reset: _reset, ...settings }) => settings,
       migrate: (persisted, version) => {
         const state = persisted as Partial<Settings>;
@@ -95,6 +95,8 @@ export const useSettings = create<SettingsStore>()(
         if (version < 2 && state.engine === 'auto') state.engine = 'browser';
         // v3: the light theme became the default instead of following the system.
         if (version < 3 && state.theme === 'system') state.theme = 'light';
+        // v4: the video signs are recognised; Qoldau's template gestures became optional.
+        if (version < 4 && (state.mode as string) === 'both') state.mode = 'signs';
         return state as SettingsStore;
       },
     },

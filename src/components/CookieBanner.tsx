@@ -2,6 +2,7 @@ import { useT } from '../i18n';
 import { useConsent, type ConsentChoice } from '../store/consent';
 import { useUi } from '../store/ui';
 import { Icon } from './Icon';
+import { TermsLink } from './TermsLink';
 
 export function CookieBanner() {
   const t = useT();
@@ -21,7 +22,7 @@ export function CookieBanner() {
       <div className="cookie-banner__text">
         <h2 id="cookie-title">{t('cookie.title')}</h2>
         <p>
-          {t('cookie.text')} <a href="#/privacy">{t('cookie.more')}</a>
+          {t('cookie.text')} <TermsLink />
         </p>
       </div>
       <div className="cookie-banner__actions">

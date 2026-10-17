@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SIGN_BY_WORD } from '../data/signs';
 import { WORDS_BY_ID } from '../data/vocabulary';
 import { composeKazakh } from './kk/sentence';
 import { QUICK_PHRASES, WordPredictor, buildPredictor, frequentPhrases } from './predict';
@@ -50,6 +51,16 @@ describe('frequentPhrases', () => {
 });
 
 describe('QUICK_PHRASES', () => {
+  it('uses only words that have a video lesson', () => {
+    expect(QUICK_PHRASES.flat().filter((id) => !SIGN_BY_WORD.has(id))).toEqual([]);
+  });
+
+  it('seeds suggestions of video-lesson words', () => {
+    const lesson = (id: string) => SIGN_BY_WORD.has(id);
+    expect(buildPredictor([]).suggest([], 6, lesson)).toHaveLength(6);
+    expect(buildPredictor([]).suggest(['salem'], 6, lesson).every(lesson)).toBe(true);
+  });
+
   it('uses only known words and composes each into a sentence', () => {
     for (const ids of QUICK_PHRASES) {
       const words = ids.map((id) => WORDS_BY_ID.get(id));

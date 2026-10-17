@@ -482,10 +482,22 @@ export function SiteFooter() {
             {t(l.label)}
           </a>
         ))}
+        <button type="button" className="site-footer__link" onClick={() => useUi.getState().setTermsOpen(true)}>
+          {t('footer.terms')}
+        </button>
         <button type="button" onClick={() => useUi.getState().openDialog('donate')}>
           <Icon name="heart" size={13} /> {t('donate.short')}
         </button>
       </nav>
+      <div className="site-footer__feedback">
+        <div>
+          <strong>{t('footer.feedback.title')}</strong>
+          <p>{t('footer.feedback.text')}</p>
+        </div>
+        <button type="button" className="btn btn--primary" onClick={() => useUi.getState().openFeedback()}>
+          <Icon name="message" size={16} /> {t('feedback.button')}
+        </button>
+      </div>
       <div className="site-footer__bottom">
         <small>© {new Date().getFullYear()} Qoldau</small>
         <LangSwitch />

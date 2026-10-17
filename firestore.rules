@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // Qoldau: one public profile per account for the leaderboard —
-// users/{uid}: { name, learned, learnedCount, createdAt, updatedAt }.
+// users/{uid}: { name, learned, learnedCount, createdAt, updatedAt } —
+// plus the shared chat and the reports / feedback sent from the site.
 // E-mail and password live in Firebase Authentication, never in Firestore.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -65,6 +66,29 @@ service cloud.firestore {
       allow create: if request.auth != null && validMessage(request.resource.data)
         && getAfter(chatMeta(request.auth.uid)).data.last == request.time;
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // Reports and feedback (src/lib/cloud.ts, sendFeedback) — feedback/{id}:
+    // { kind, topic, subject, text, contact, page, lang, uid, createdAt }.
+    // Anyone may send one, signed in or not; nobody reads them from the site —
+    // the team reads them in the Firebase console.
+    function validFeedback(d) {
+      let fields = ['kind', 'topic', 'subject', 'text', 'contact', 'page', 'lang', 'uid', 'createdAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.kind in ['feedback', 'report']
+        && d.topic is string && d.topic.size() <= 40
+        && d.subject is string && d.subject.size() <= 300
+        && d.text is string && d.text.size() <= 1000
+        && (d.text.size() > 0 || d.topic.size() > 0)
+        && d.contact is string && d.contact.size() <= 120
+        && d.page is string && d.page.size() <= 60
+        && d.lang in ['kk', 'ru', 'en']
+        && (d.uid == null || (request.auth != null && d.uid == request.auth.uid))
+        && d.createdAt == request.time;
+    }
+
+    match /feedback/{id} {
+      allow create: if validFeedback(request.resource.data);
     }
 
     match /chatMeta/{uid} {

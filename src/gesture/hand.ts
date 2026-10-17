@@ -112,9 +112,13 @@ export function locate(p: Point2, face: FaceBox | null, frame: FrameSize): Locat
   return 'low';
 }
 
-/** MediaPipe labels handedness as if the frame were mirrored; we feed raw frames. */
+/**
+ * The hand's real side. On raw (un-mirrored) camera frames, as fed here,
+ * MediaPipe's labels are already correct: in all 50 sign videos the signer's
+ * right hand — the one on the left of the image — is labelled 'Right'.
+ */
 export function actualSide(label: RawHand['label']): HandSide {
-  return label === 'Left' ? 'right' : 'left';
+  return label === 'Right' ? 'right' : 'left';
 }
 
 export function analyzeHand(raw: RawHand, frame: FrameSize, face: FaceBox | null): HandFeatures {

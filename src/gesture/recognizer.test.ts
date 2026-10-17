@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { VOCABULARY } from '../data/vocabulary';
+import { TEMPLATE_WORDS } from '../data/vocabulary';
 import { TEST_FACE, fakeHand } from './__fixtures__/synthHand';
 import { Recognizer, type CommitEvent } from './recognizer';
 import type { HandFeatures } from './types';
@@ -8,7 +8,7 @@ const HOLD = 500;
 const STEP = 33;
 
 function setup() {
-  const rec = new Recognizer(VOCABULARY, { holdMs: HOLD, mode: 'templates', dominant: 'right' });
+  const rec = new Recognizer(TEMPLATE_WORDS, { holdMs: HOLD, mode: 'templates', dominant: 'right' });
   const commits: Array<CommitEvent & { t: number }> = [];
   let now = 0;
   const run = (durationMs: number, hands: (t: number) => HandFeatures[]) => {
@@ -57,7 +57,7 @@ describe('Recognizer', () => {
     run(900, () => [fakeHand({ shape: 'open', location: 'head', y: 90 })]);
     run(1500, (t) => [fakeHand({ shape: 'open', location: 'head', x: 320 + 35 * Math.sin((2 * Math.PI * 2.5 * t) / 1000), y: 90 })]);
     expect(commits.map((c) => c.wordId)).toEqual(['toktanyz', 'salemetsiz']);
-    expect(commits[1].replaceLast).toBe(true);
+    expect(commits[1].replace).toBe(1);
   });
 
   it('recognises two-handed signs', () => {
@@ -83,6 +83,6 @@ describe('Recognizer', () => {
     run(1000, five);
     run(1000, () => [fakeHand({ shape: 'thumb', dir: 'up', location: 'chest' })]);
     expect(commits.map((c) => c.wordId)).toEqual(['bes', 'zhaksy']);
-    expect(commits[1].replaceLast).toBe(false);
+    expect(commits[1].replace).toBe(0);
   });
 });

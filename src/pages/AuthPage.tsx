@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { LangSwitch, Logo } from '../components/Header';
 import { Icon, type IconName } from '../components/Icon';
+import { TermsLink } from '../components/TermsLink';
 import { useT, type MessageKey } from '../i18n';
 import { CloudError, resetPassword } from '../lib/cloud';
 import { useAuth } from '../store/auth';
@@ -252,7 +253,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                 <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
                 <span>
                   {t('auth.agree.before')}
-                  <a href="#/privacy">{t('auth.agree.link')}</a>
+                  <TermsLink>{t('auth.agree.link')}</TermsLink>
                   {t('auth.agree.after')}
                 </span>
               </label>

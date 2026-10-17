@@ -2,10 +2,17 @@ import { assignHands, handRelation } from './hand';
 import { buildFeatureVector, type KnnModel } from './knn';
 import { bestMatch, isStillSpec, signatureOf, type SpecEntry } from './matcher';
 import { MotionTracker, type MotionSummary } from './motion';
+import type { SignCommit, SignSpotter } from './signSpotter';
 import type { FaceBox, HandFeatures, HandSide, Observation, Relation } from './types';
 
-export type RecognitionMode = 'both' | 'templates' | 'custom';
-export type CandidateSource = 'template' | 'custom';
+/**
+ * Where words come from: `signs` — the video lessons and the user's own
+ * recordings; `all` — also Qoldau's simplified template gestures;
+ * `templates` — only those; `custom` — only the user's recordings.
+ */
+export type RecognitionMode = 'signs' | 'all' | 'templates' | 'custom';
+/** template: Qoldau's own gesture; custom: recorded on the Train page; sign: a video lesson. */
+export type CandidateSource = 'template' | 'custom' | 'sign';
 
 export interface RecognizerOptions {
   /** How long a static gesture must be held, ms. */
@@ -21,13 +28,19 @@ export interface Candidate {
   progress: number;
   /** Already committed and waiting for the hand to change. */
   blocked: boolean;
+  /** A video sign matched on one of the user's own recordings (Train page). */
+  own?: boolean;
 }
 
 export interface CommitEvent {
   wordId: string;
   source: CandidateSource;
-  /** The new word replaces the previous one (see SUPERSEDE_WINDOW_MS). */
-  replaceLast: boolean;
+  /**
+   * How many of the last words the new one replaces: they turned out to be
+   * the start of this sign (see SUPERSEDE_WINDOW_MS and SignSpotter).
+   */
+  replace: number;
+  own?: boolean;
 }
 
 export interface RecognizerFrame {
@@ -88,6 +101,9 @@ interface LastCommit {
   domShape: string | null;
 }
 
+/** Only the last few words can still be replaced. */
+const KEEP_RECENT = 8;
+
 export class Recognizer {
   private readonly trackers: Record<HandSide, MotionTracker> = { left: new MotionTracker(), right: new MotionTracker() };
   private readonly lastSeen: Record<HandSide, number> = { left: -Infinity, right: -Infinity };
@@ -97,11 +113,15 @@ export class Recognizer {
   private last: LastCommit | null = null;
   private lastHandsAt = -Infinity;
   private byId = new Map<string, SpecEntry>();
+  /** Source of each recent word, newest last. */
+  private recent: { wordId: string; source: CandidateSource; at: number }[] = [];
 
   constructor(
     private entries: readonly SpecEntry[],
     public options: RecognizerOptions,
     public knn: KnnModel | null = null,
+    /** Matcher of the video signs; loaded separately (see useGestureEngine). */
+    public signs: SignSpotter | null = null,
   ) {
     this.setEntries(entries);
   }
@@ -118,12 +138,18 @@ export class Recognizer {
     this.current = null;
     this.lock = null;
     this.last = null;
+    this.recent = [];
+    this.signs?.reset();
   }
 
   process(frame: RecognizerFrame): RecognizerOutput {
     const { t, face } = frame;
-    const { holdMs, mode } = this.options;
-    const { dom, nonDom } = assignHands(frame.hands, this.options.dominant);
+    const { holdMs, mode, dominant } = this.options;
+    const useSigns = mode === 'signs' || mode === 'all';
+    const useTemplates = mode === 'all' || mode === 'templates';
+    const useCustom = mode !== 'templates';
+    const { dom, nonDom } = assignHands(frame.hands, dominant);
+    const sign = useSigns && this.signs ? this.signs.push(t, frame.hands, face, dominant) : null;
 
     for (const hand of [dom, nonDom]) {
       if (!hand) continue;
@@ -158,7 +184,7 @@ export class Recognizer {
 
     // 1. Find what the hands are showing right now.
     let found: Omit<Current, 'since'> | null = null;
-    if (mode !== 'templates' && this.knn && features) {
+    if (useCustom && this.knn && features) {
       const result = this.knn.classify(features);
       if (result) {
         const spec = this.byId.get(result.label)?.gesture;
@@ -172,7 +198,7 @@ export class Recognizer {
     }
     // The observation the match was made on (may be the other hand, see below).
     let matched = observation;
-    if (!found && mode !== 'custom') {
+    if (!found && useTemplates) {
       let match = bestMatch(this.entries, observation);
       if (!match && nonDom && nonDomMotion && relation === 'apart') {
         // The dominant hand shows nothing (resting, or handedness was misread):
@@ -207,6 +233,11 @@ export class Recognizer {
     // 3. Commit once the candidate has been stable long enough.
     let candidate: Candidate | null = null;
     let commit: CommitEvent | null = null;
+    if (sign?.commit) {
+      commit = this.commitSign(t, sign.commit);
+      // The sign wins this frame; the hand-shape candidate starts over.
+      this.current = null;
+    }
     const cur = this.current;
     if (cur) {
       const elapsed = t - cur.since;
@@ -221,7 +252,7 @@ export class Recognizer {
       if (!blocked && elapsed >= need && t - (this.last?.at ?? -Infinity) >= MIN_GAP_MS) {
         commit = this.commit(t, cur, matched, signature);
       }
-    } else if (mode !== 'custom' && dom && domMotion && domMotion.motion === 'moving' && domMotion.stillFor > 0) {
+    } else if (useTemplates && dom && domMotion && domMotion.motion === 'moving' && domMotion.stillFor > 0) {
       // Preview: which static sign is the hand settling into?
       const preview = bestMatch(this.entries, {
         ...observation,
@@ -236,6 +267,10 @@ export class Recognizer {
           blocked: false,
         };
       }
+    }
+    const s = sign?.candidate;
+    if (s && (!candidate || (!candidate.blocked && s.progress >= candidate.progress))) {
+      candidate = { wordId: s.id, source: 'sign', progress: s.progress, blocked: s.blocked, own: s.own };
     }
 
     return {
@@ -297,6 +332,24 @@ export class Recognizer {
 
     this.last = { wordId: cur.wordId, at: t, still: cur.still, twoHanded: cur.twoHanded, domShape };
     this.lock = { wordId: cur.wordId, signature, changedSince: null };
-    return { wordId: cur.wordId, source: cur.source, replaceLast };
+    return this.remember(t, cur.wordId, cur.source, replaceLast ? 1 : 0);
+  }
+
+  private commitSign(t: number, c: SignCommit): CommitEvent | null {
+    const prev = this.recent[this.recent.length - 1];
+    // The user's own recording of the same word may have written it already.
+    if (c.replaces === 0 && prev?.wordId === c.id && prev.source !== 'sign' && t - prev.at <= SUPERSEDE_WINDOW_MS) return null;
+    // Replace only what the sign matcher itself wrote.
+    let replace = 0;
+    while (replace < c.replaces && this.recent[this.recent.length - 1 - replace]?.source === 'sign') replace++;
+    // A template gesture must not "supersede" a sign.
+    this.last = { wordId: c.id, at: t, still: false, twoHanded: false, domShape: null };
+    return { ...this.remember(t, c.id, 'sign', replace), own: c.own };
+  }
+
+  private remember(t: number, wordId: string, source: CandidateSource, replace: number): CommitEvent {
+    this.recent.splice(this.recent.length - replace, replace, { wordId, source, at: t });
+    if (this.recent.length > KEEP_RECENT) this.recent.shift();
+    return { wordId, source, replace };
   }
 }

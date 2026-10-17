@@ -30,6 +30,11 @@ const TRIM_WINDOW_MS = 100;
 const STATIC_MAX_MS = 1000;
 /** …when the hand moves less than this (face widths). */
 const STATIC_RANGE = 0.5;
+/**
+ * When the recording stops while the sign is still going, its last moments
+ * are left out: the camera must not have to see the very last frame.
+ */
+const CUT_END_MS = 200;
 /** A sign is two-handed when the second hand is up (not resting) for at least half of it. */
 const SECOND_HAND_Y = 2.2;
 
@@ -76,6 +81,7 @@ export function resample(frames: readonly SignFrame[], from: number, to: number)
  */
 export function buildTemplate(id: string, frames: readonly SignFrame[], range?: [number, number]): SignTemplate {
   let [from, to] = range ?? activeRange(frames);
+  if (!range && frames[frames.length - 1].t - to < TRIM_WINDOW_MS) to -= CUT_END_MS;
   const active = frames.filter((f) => f.t >= from && f.t <= to && f.hands.length);
   if (!active.length) throw new Error(`${id}: no hands in ${from}–${to} ms`);
 
@@ -91,7 +97,8 @@ export function buildTemplate(id: string, frames: readonly SignFrame[], range?: 
   const twoHanded =
     two.length >= active.length / 2 && two.reduce((s, f) => s + (f.hands[1].loc?.[1] ?? Infinity), 0) / two.length < SECOND_HAND_Y;
 
-  const ticks = resample(frames, from, to).map((f): SignFrame => {
+  // Frames without hands (a dropout of the hand tracker) can never be matched.
+  const ticks = resample(frames.filter((f) => f.hands.length), from, to).map((f): SignFrame => {
     if (twoHanded || f.hands.length < 2) return f;
     // One-handed sign: keep the hand that is higher up — the other one is resting.
     const signing = f.hands.reduce((a, b) => ((a.loc?.[1] ?? Infinity) <= (b.loc?.[1] ?? Infinity) ? a : b));
@@ -107,15 +114,17 @@ export interface StoredSignModel {
   templates: Array<{ id: string; twoHanded: boolean; frames: number[][][] }>;
 }
 
+/** Template frames as arrays of packed hands (one frame per tick). */
+export const packFrames = (frames: readonly SignFrame[]): number[][][] => frames.map((f) => f.hands.map((h) => packHand(h)));
+
+export const unpackFrames = (frames: readonly (readonly number[][])[], tickMs = TICK_MS): SignFrame[] =>
+  frames.map((hands, i) => ({ t: Math.round(i * tickMs), hands: hands.map((h): SignHand => unpackHand(h)) }));
+
 export function packModel(model: SignModel): StoredSignModel {
   return {
     version: 1,
     tickMs: model.tickMs,
-    templates: model.templates.map((t) => ({
-      id: t.id,
-      twoHanded: t.twoHanded,
-      frames: t.frames.map((f) => f.hands.map((h) => packHand(h))),
-    })),
+    templates: model.templates.map((t) => ({ id: t.id, twoHanded: t.twoHanded, frames: packFrames(t.frames) })),
   };
 }
 
@@ -123,10 +132,6 @@ export function unpackModel(stored: StoredSignModel): SignModel {
   return {
     version: 1,
     tickMs: stored.tickMs,
-    templates: stored.templates.map((t) => ({
-      id: t.id,
-      twoHanded: t.twoHanded,
-      frames: t.frames.map((hands, i) => ({ t: Math.round(i * stored.tickMs), hands: hands.map((h): SignHand => unpackHand(h)) })),
-    })),
+    templates: stored.templates.map((t) => ({ id: t.id, twoHanded: t.twoHanded, frames: unpackFrames(t.frames, stored.tickMs) })),
   };
 }

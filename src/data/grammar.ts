@@ -52,6 +52,9 @@ export const GRAMMAR: Readonly<Record<string, WordGrammar>> = {
   ake: noun('kin'),
   bala: noun('kin'),
   otbasy: noun('kin'),
+  esim: noun(),
+  erkek: noun('person'),
+  aiel: noun('person'),
 
   // Questions
   kim: q('who'),
@@ -75,6 +78,7 @@ export const GRAMMAR: Readonly<Record<string, WordGrammar>> = {
   zhedel: noun('need', 'Жедел жәрдем шақырыңыз!'),
   toktanyz: phrase('command'),
   aksha: noun('need'),
+  kitap: noun('need'),
 
   // Actions
   baru: verb('бар', { motion: 'to' }),
@@ -85,6 +89,8 @@ export const GRAMMAR: Readonly<Record<string, WordGrammar>> = {
   soileu: verb('сөйле', { object: 'ins' }),
   tyndau: verb('тыңда', { object: 'acc' }),
   koru: verb('көр', { object: 'acc' }),
+  karau: verb('қара', { object: 'dat' }),
+  ushu: verb('ұш', { motion: 'to' }),
   bilu: verb('біл', { object: 'acc' }),
   tusinu: verb('түсін', { object: 'acc' }),
   zhazu: verb('жаз', { object: 'dat' }),
@@ -116,6 +122,11 @@ export const GRAMMAR: Readonly<Record<string, WordGrammar>> = {
   uakyt: noun('time'),
   kun: { gram: { pos: 'noun', kind: 'time', adverb: 'күндіз' } },
   tun: { gram: { pos: 'noun', kind: 'time', adverb: 'түнде' } },
+  tan: { gram: { pos: 'noun', kind: 'time', adverb: 'таңертең' } },
+  kesh: { gram: { pos: 'noun', kind: 'time', adverb: 'кешке' } },
+  apta: noun('time'),
+  ai: noun('time'),
+  zhyl: noun('time'),
 
   // Places
   ui: noun('place'),
@@ -139,6 +150,20 @@ export const GRAMMAR: Readonly<Record<string, WordGrammar>> = {
   kop: quant,
   az: quant,
   tagy: quant,
+
+  // Animals
+  it: noun(),
+  mysyk: noun(),
+  balyk: noun(),
+  kus: noun(),
+
+  // Colours
+  kyzyl: adj(),
+  kok: adj(),
+  zhasyl: adj(),
+  ak: adj(),
+  kara: adj(),
+  sary: adj(),
 
   // Numbers
   bir: num,

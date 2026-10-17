@@ -41,10 +41,10 @@ describe('locate', () => {
 });
 
 describe('assignHands', () => {
-  const right = analyzeHand(toRawHand(synthWorld(POSES.open), { x: 200, y: 380 }, 'Left'), TEST_FRAME, TEST_FACE);
-  const left = analyzeHand(toRawHand(synthWorld(POSES.fist), { x: 440, y: 380 }, 'Right'), TEST_FRAME, TEST_FACE);
+  const right = analyzeHand(toRawHand(synthWorld(POSES.open), { x: 200, y: 380 }, 'Right'), TEST_FRAME, TEST_FACE);
+  const left = analyzeHand(toRawHand(synthWorld(POSES.fist), { x: 440, y: 380 }, 'Left'), TEST_FRAME, TEST_FACE);
 
-  it('maps mirrored MediaPipe labels to the real hands', () => {
+  it('takes the real hand from the MediaPipe label (raw, un-mirrored frames)', () => {
     expect(right.side).toBe('right');
     expect(left.side).toBe('left');
   });
@@ -68,9 +68,9 @@ describe('assignHands', () => {
 
 describe('handRelation', () => {
   it('distinguishes touching hands from hands held apart', () => {
-    const a = analyzeHand(toRawHand(synthWorld(POSES.point), { x: 300, y: 380 }, 'Left'), TEST_FRAME, TEST_FACE);
-    const near = analyzeHand(toRawHand(synthWorld(POSES.point), { x: 330, y: 380 }, 'Right'), TEST_FRAME, TEST_FACE);
-    const far = analyzeHand(toRawHand(synthWorld(POSES.point), { x: 560, y: 380 }, 'Right'), TEST_FRAME, TEST_FACE);
+    const a = analyzeHand(toRawHand(synthWorld(POSES.point), { x: 300, y: 380 }, 'Right'), TEST_FRAME, TEST_FACE);
+    const near = analyzeHand(toRawHand(synthWorld(POSES.point), { x: 330, y: 380 }, 'Left'), TEST_FRAME, TEST_FACE);
+    const far = analyzeHand(toRawHand(synthWorld(POSES.point), { x: 560, y: 380 }, 'Left'), TEST_FRAME, TEST_FACE);
     expect(handRelation(a, near)).toBe('together');
     expect(handRelation(a, far)).toBe('apart');
   });
