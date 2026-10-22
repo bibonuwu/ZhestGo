@@ -8,6 +8,7 @@ export type CategoryId =
   | 'people'
   | 'questions'
   | 'needs'
+  | 'emergency'
   | 'actions'
   | 'feelings'
   | 'time'
@@ -49,13 +50,14 @@ export interface WordEntry {
  * Icons of the word categories and lesson topics: names from components/Icon.tsx.
  * (SVG, not emoji: phones load the colour emoji font slowly, and it looks different everywhere.)
  */
-export type TopicIcon = 'hand' | 'users' | 'quiz' | 'lifebuoy' | 'zap' | 'heart' | 'clock' | 'home' | 'utensils' | 'ruler' | 'hash' | 'paw' | 'palette' | 'box';
+export type TopicIcon = 'hand' | 'users' | 'quiz' | 'lifebuoy' | 'siren' | 'zap' | 'heart' | 'clock' | 'home' | 'utensils' | 'ruler' | 'hash' | 'paw' | 'palette' | 'box';
 
 export const CATEGORIES: ReadonlyArray<{ id: CategoryId; label: Localized; icon: TopicIcon }> = [
   { id: 'greetings', label: { kk: 'Сәлемдесу', ru: 'Приветствие', en: 'Greetings' }, icon: 'hand' },
   { id: 'people', label: { kk: 'Адамдар', ru: 'Люди', en: 'People' }, icon: 'users' },
   { id: 'questions', label: { kk: 'Сұрақтар', ru: 'Вопросы', en: 'Questions' }, icon: 'quiz' },
   { id: 'needs', label: { kk: 'Қажеттілік', ru: 'Нужды', en: 'Needs' }, icon: 'lifebuoy' },
+  { id: 'emergency', label: { kk: 'Шұғыл көмек', ru: 'Экстренная помощь', en: 'Emergency' }, icon: 'siren' },
   { id: 'actions', label: { kk: 'Әрекеттер', ru: 'Действия', en: 'Actions' }, icon: 'zap' },
   { id: 'feelings', label: { kk: 'Сезімдер', ru: 'Чувства', en: 'Feelings' }, icon: 'heart' },
   { id: 'time', label: { kk: 'Уақыт', ru: 'Время', en: 'Time' }, icon: 'clock' },
@@ -93,10 +95,10 @@ const two = (
 const hint = (kk: string, ru: string, en: string): Localized => ({ kk, ru, en });
 
 /**
- * 121 everyday Kazakh words. The `gesture`s are Qoldau's own simplified
+ * 120 everyday Kazakh words. The `gesture`s are Qoldau's own simplified
  * system, designed to be reliably recognisable by a webcam — not official
  * Kazakh Sign Language. The 50 signs of the video lessons (data/signs.ts) are
- * recognised from the videos themselves; 21 words exist only as such a sign.
+ * recognised from the videos themselves; 20 words exist only as such a sign.
  */
 const ENTRIES: readonly WordEntry[] = [
   // ── Greetings & courtesy ──────────────────────────────────────────────
@@ -162,7 +164,6 @@ const ENTRIES: readonly WordEntry[] = [
   { id: 'tyndau', kk: 'тыңдау', ru: 'слушать', en: 'listen', category: 'actions', gesture: one('point', 'face'), hint: hint('Құлаққа нұсқаңыз', 'Укажите на ухо', 'Point at your ear') },
   { id: 'koru', kk: 'көру', ru: 'видеть', en: 'see', category: 'actions', gesture: one('v', 'face'), hint: hint('Екі саусақ — екі көз', 'Два пальца — два глаза', 'Two fingers — two eyes') },
   { id: 'karau', kk: 'қарау', ru: 'смотреть', en: 'look, watch', category: 'actions' },
-  { id: 'ushu', kk: 'ұшу', ru: 'летать', en: 'fly', category: 'actions' },
   { id: 'bilu', kk: 'білу', ru: 'знать', en: 'know', category: 'actions', gesture: one('point', 'head'), hint: hint('Маңдайға нұсқаңыз', 'Укажите на лоб', 'Point at your forehead') },
   { id: 'tusinu', kk: 'түсіну', ru: 'понимать', en: 'understand', category: 'actions', gesture: one('point', 'head', 'nod'), hint: hint('Маңдайды қағыңыз', 'Постучите по лбу', 'Tap your forehead') },
   { id: 'zhazu', kk: 'жазу', ru: 'писать', en: 'write', category: 'actions', gesture: two('pinch', 'open', 'together', 'wave'), hint: hint('Алақанға жазғандай', 'Как будто пишете на ладони', 'As if writing on your palm') },

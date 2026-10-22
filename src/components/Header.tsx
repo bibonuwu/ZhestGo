@@ -15,6 +15,7 @@ export type Page =
   | 'translate'
   | 'dictionary'
   | 'learn'
+  | 'kids'
   | 'leaderboard'
   | 'train'
   | 'settings'
@@ -26,6 +27,7 @@ const TABS: Array<{ id: Page; label: MessageKey; icon: IconName }> = [
   { id: 'translate', label: 'nav.translate', icon: 'hand' },
   { id: 'dictionary', label: 'nav.dictionary', icon: 'book' },
   { id: 'learn', label: 'nav.learn', icon: 'film' },
+  { id: 'kids', label: 'nav.kids', icon: 'smile' },
   { id: 'leaderboard', label: 'nav.leaderboard', icon: 'trophy' },
   { id: 'train', label: 'nav.train', icon: 'graduate' },
   { id: 'settings', label: 'nav.settings', icon: 'sliders' },

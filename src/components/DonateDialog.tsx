@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { charityMapUrl, DONATE, hasCard, hasKaspi, telegramUrl } from '../data/donate';
+import { DONATE, hasCard, hasKaspi, telegramUrl } from '../data/donate';
 import { LOCALES, useT } from '../i18n';
 import { publicUrl } from '../lib/media';
 import { useSettings } from '../store/settings';
@@ -47,36 +47,6 @@ export function TelegramLink({ username }: { username: string }) {
   );
 }
 
-/** Who receives the donations, with the place on a map. */
-function CharityCard() {
-  const t = useT();
-  const lang = useSettings((s) => s.lang);
-  const { charity } = DONATE;
-  return (
-    <section className="charity" aria-labelledby="charity-title">
-      <div className="charity__text">
-        <p className="donate__label" id="charity-title">
-          {t('donate.charity.title')}
-        </p>
-        <p className="charity__name">
-          <Icon name="school" size={18} />
-          <strong>{charity.name[lang]}</strong>
-        </p>
-        <p className="charity__address">
-          <Icon name="mapPin" size={15} /> {charity.address[lang]}
-        </p>
-        <p className="charity__promise">{t('donate.charity.text')}</p>
-      </div>
-      <div className="charity__map">
-        <iframe title={t('donate.charity.map')} src={charityMapUrl()} loading="lazy" referrerPolicy="no-referrer" />
-      </div>
-      <a className="btn btn--sm charity__link" href={charity.link} target="_blank" rel="noreferrer">
-        <Icon name="mapPin" size={15} /> {t('donate.charity.open')} <Icon name="external" size={14} />
-      </a>
-    </section>
-  );
-}
-
 export function DonateDialog({ onClose }: { onClose: () => void }) {
   const t = useT();
   const lang = useSettings((s) => s.lang);
@@ -101,9 +71,9 @@ export function DonateDialog({ onClose }: { onClose: () => void }) {
   };
 
   const goals: Array<{ icon: IconName; text: string }> = [
-    { icon: 'heart', text: t('donate.goal.charity') },
-    { icon: 'school', text: t('donate.goal.school') },
-    { icon: 'mapPin', text: t('donate.goal.city') },
+    { icon: 'sparkles', text: t('donate.goal.site') },
+    { icon: 'video', text: t('donate.goal.videos') },
+    { icon: 'book', text: t('donate.goal.free') },
   ];
 
   return (
@@ -126,8 +96,6 @@ export function DonateDialog({ onClose }: { onClose: () => void }) {
       </header>
 
       <div className="donate__body">
-        <CharityCard />
-
         {configured ? (
           <>
             {hasKaspi && !hasCard && <p className="donate__title">{t('support.money.title')}</p>}
@@ -208,6 +176,9 @@ export function DonateDialog({ onClose }: { onClose: () => void }) {
             {sum > 0 && <p className="donate__sum">{t('donate.sum', { sum: money(sum) })}</p>}
             <p className="donate__note">
               <Icon name="heart" size={15} /> {t('donate.note')}
+            </p>
+            <p className="donate__private">
+              <Icon name="shield" size={15} /> {t('donate.private')}
             </p>
           </>
         ) : (

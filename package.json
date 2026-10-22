@@ -27,7 +27,7 @@
     "landmarks": "tsx scripts/extract-landmarks.ts",
     "sign-model": "tsx scripts/build-sign-model.ts",
     "build:firebase": "tsc -b && vite build --mode firebase",
-    "deploy": "npm run build:firebase && firebase deploy --only hosting,firestore"
+    "deploy": "npm run build:firebase && firebase deploy --only hosting,firestore && firebase hosting:clone qoldau-ai-kz:live qoldau-ym:live"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

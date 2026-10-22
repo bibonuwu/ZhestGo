@@ -75,6 +75,9 @@ export default defineConfig(({ mode }) => {
             'mediapipe/**/*nosimd*',
             'mediapipe/**/*module*',
             'voices/**',
+            // Cartoons, comic pages and the guide video are watched online, not stored ahead.
+            'kids/**',
+            'guide/**',
             'assets/inter-{greek,greek-ext,vietnamese,latin-ext}-*.woff2',
           ],
           manifestTransforms: [

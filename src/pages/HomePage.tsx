@@ -5,6 +5,7 @@ import { LeaderboardCard, useLiveLeaderboard } from '../components/Leaderboard';
 import { TelegramLink } from '../components/DonateDialog';
 import { AUTHORS } from '../data/authors';
 import { DONATE, telegramUrl } from '../data/donate';
+import { GUIDE } from '../data/guide';
 import { SIGN_BY_WORD, SIGNS, SIGNS_BY_ID } from '../data/signs';
 import { capitalize } from '../data/words';
 import { LOCALES, useT, type MessageKey } from '../i18n';
@@ -116,6 +117,7 @@ function HeroNav() {
   const t = useT();
   const links: Array<{ href: string; label: MessageKey }> = [
     { href: '#/learn', label: 'nav.learn' },
+    { href: '#/kids', label: 'nav.kids' },
     { href: '#/leaderboard', label: 'nav.leaderboard' },
     { href: '#/translate', label: 'nav.translate' },
     { href: '#/dictionary', label: 'nav.dictionary' },
@@ -247,9 +249,9 @@ function Hero() {
             <span>{t('donate.button')}</span>
             <strong>{t('donate.hero.title')}</strong>
             <small>
-              <b>{t('donate.goal.charity')}</b>
-              <em>{t('donate.goal.school')}</em>
-              <em>{t('donate.goal.city')}</em>
+              <b>{t('donate.goal.site')}</b>
+              <em>{t('donate.goal.videos')}</em>
+              <em>{t('donate.goal.free')}</em>
             </small>
           </span>
           <span className="support-gift__via">{t('donate.hero.via')}</span>
@@ -451,6 +453,7 @@ export function SiteFooter() {
     { href: '#/leaderboard', label: 'nav.leaderboard' },
     { href: '#/translate', label: 'nav.translate' },
     { href: '#/dictionary', label: 'nav.dictionary' },
+    { href: '#/kids', label: 'nav.kids' },
     { href: '#/train', label: 'nav.train' },
     { href: '#/privacy', label: 'footer.privacy' },
   ];
@@ -485,6 +488,11 @@ export function SiteFooter() {
         <button type="button" className="site-footer__link" onClick={() => useUi.getState().setTermsOpen(true)}>
           {t('footer.terms')}
         </button>
+        {GUIDE.video && (
+          <button type="button" className="site-footer__link" onClick={() => useUi.getState().openDialog('guide')}>
+            {t('guide.link')}
+          </button>
+        )}
         <button type="button" onClick={() => useUi.getState().openDialog('donate')}>
           <Icon name="heart" size={13} /> {t('donate.short')}
         </button>

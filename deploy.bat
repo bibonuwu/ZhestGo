@@ -3,12 +3,13 @@ chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
 
-rem Qoldau: публикация сайта на https://qoldau-ym.web.app
-rem (Firebase Hosting + правила и индексы Firestore).
+rem Qoldau: публикация сайта на https://qoldau-ai-kz.web.app
+rem (Firebase Hosting + правила и индексы Firestore). Та же версия копируется
+rem на прежний адрес https://qoldau-ym.web.app, чтобы старые ссылки работали.
 rem Запуск: двойной клик по файлу или "deploy.bat" в терминале.
 
 echo.
-echo ===  Qoldau: публикация на https://qoldau-ym.web.app  ===
+echo ===  Qoldau: публикация на https://qoldau-ai-kz.web.app  ===
 echo.
 
 where node >nul 2>nul
@@ -60,9 +61,13 @@ call npm run build:firebase
 if errorlevel 1 goto fail
 call %FIREBASE% deploy --only hosting,firestore --project qoldau-4630c
 if errorlevel 1 goto fail
+echo     Копия на прежний адрес qoldau-ym.web.app...
+call %FIREBASE% hosting:clone qoldau-ai-kz:live qoldau-ym:live --project qoldau-4630c
+if errorlevel 1 goto fail
 
 echo.
-echo [OK] Готово: https://qoldau-ym.web.app
+echo [OK] Готово: https://qoldau-ai-kz.web.app
+echo      (и прежний адрес https://qoldau-ym.web.app)
 echo.
 call :hold
 exit /b 0

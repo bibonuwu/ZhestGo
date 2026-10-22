@@ -94,16 +94,18 @@ html:has(.modal[open]) {
 }
 
 /* Long header: the tagline goes first. */
-@media (max-width: 1500px) {
+@media (max-width: 1800px) {
   .header .brand__text small {
     display: none;
   }
 }
 
-@media (max-width: 1320px) {
+/* Then the header's buttons shrink to icons; signing up stays on the sign-in page. */
+@media (max-width: 1680px) {
   .header .donate-pill span,
   .header .account__login span,
-  .header .account-menu__name {
+  .header .account-menu__name,
+  .header .account__register {
     display: none;
   }
 
@@ -112,13 +114,31 @@ html:has(.modal[open]) {
     padding: 0;
     justify-content: center;
   }
+}
 
+/*
+ * The tabs fit the width the header leaves them, whatever else it shows
+ * (update, offline): first tighter, then without icons, then smaller. Widths
+ * are for the Kazakh labels, the longest. If even that is too wide, the tabs
+ * scroll sideways instead of the whole page.
+ */
+@media (min-width: 761px) {
+  .nav {
+    container: nav / inline-size;
+    justify-content: safe center;
+    padding: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+@container nav (max-width: 870px) {
   .nav__link {
     padding: 9px 11px;
   }
 }
 
-@media (min-width: 761px) and (max-width: 1180px) {
+@container nav (max-width: 828px) {
   .nav__link {
     gap: 6px;
     padding: 8px 9px;
@@ -127,6 +147,35 @@ html:has(.modal[open]) {
 
   .nav__link .icon {
     display: none;
+  }
+}
+
+@container nav (max-width: 552px) {
+  .nav__link {
+    padding: 8px 6px;
+  }
+}
+
+@container nav (max-width: 510px) {
+  .nav__link {
+    padding: 8px 4px;
+    font-size: 12.5px;
+  }
+}
+
+/* Tablets: the logo without its name. */
+@media (min-width: 761px) and (max-width: 1040px) {
+  .header {
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .header .brand__text {
+    display: none;
+  }
+
+  .nav {
+    gap: 0;
   }
 }
 
@@ -1893,6 +1942,29 @@ html:has(.modal[open]) {
   color: #ff6728;
 }
 
+.donate__private,
+.cookie-banner .cookie-banner__bank {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.donate__private .icon,
+.cookie-banner__bank .icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--success);
+}
+
+.cookie-banner .cookie-banner__bank {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
 .donate__soon {
   display: grid;
   justify-items: center;
@@ -1906,75 +1978,6 @@ html:has(.modal[open]) {
   margin: 0;
   color: var(--muted);
   line-height: 1.6;
-}
-
-/* Where the donations go: the boarding school and its place on the map */
-.charity {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 6px;
-  padding: 16px;
-  border: 1px solid var(--l-orange-line);
-  border-radius: 20px;
-  background: var(--l-orange-soft);
-}
-
-.charity__text {
-  display: grid;
-  gap: 6px;
-}
-
-.charity__text .donate__label {
-  margin: 0;
-  color: var(--l-orange-text);
-}
-
-.charity__name {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.35;
-}
-
-.charity__name .icon {
-  flex: none;
-  margin-top: 1px;
-  color: var(--sunset);
-}
-
-.charity__address,
-.charity__promise {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.charity__promise {
-  color: var(--text);
-}
-
-.charity__map {
-  overflow: hidden;
-  height: 190px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface-2);
-}
-
-.charity__map iframe {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
-
-.charity__link {
-  justify-self: start;
 }
 
 /* Checkbox with a label (sign-in page) */
@@ -2054,6 +2057,43 @@ html:has(.modal[open]) {
   margin: -6px 0 0;
   color: var(--muted);
   font-size: 18px;
+}
+
+/* The word in syllables, with its own speaker (components/Syllables.tsx) */
+.syllables {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: -4px;
+}
+
+.syllables__text {
+  margin: 0;
+  font-size: clamp(22px, 2.6vw, 28px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.syllables__dot {
+  margin: 0 0.12em;
+  color: var(--accent);
+}
+
+.syllables__part {
+  padding: 0 2px;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.syllables__part.is-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.syllables .round-btn.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .lesson__tools {
@@ -3216,6 +3256,221 @@ html:has(.modal[open]) {
 .sign-card__text small {
   color: var(--muted);
   font-size: 13px;
+}
+
+/* Kids: cartoons and comic books (pages/KidsPage.tsx) */
+.kids__section {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.kids__section > h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.kids__section > h2 .icon {
+  color: var(--accent);
+}
+
+.cartoon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 18px;
+}
+
+.cartoon {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.cartoon video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.cartoon h3 {
+  margin: 0;
+  padding: 12px 16px 14px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.comic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.comic-card {
+  display: grid;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+}
+
+.comic-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgb(15 27 45 / 0.12);
+}
+
+.comic-card__cover {
+  aspect-ratio: 3 / 4;
+  background: var(--surface-2);
+}
+
+.comic-card__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comic-card__text {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px 12px;
+}
+
+.comic-card__text strong {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.comic-card__text small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Comic reader: the cover, then the pages with arrows */
+.book {
+  display: grid;
+  gap: 12px;
+  width: min(780px, calc(100% - 24px));
+  padding: 18px 18px 20px;
+}
+
+.book__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding-right: 48px;
+}
+
+.book__head h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.book__count {
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.book__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface-2);
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.book__stage img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 170px);
+  object-fit: contain;
+}
+
+.book__arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.92);
+  color: #1f75e8;
+  box-shadow: 0 6px 18px rgb(15 27 45 / 0.22);
+  cursor: pointer;
+  translate: 0 -50%;
+  transition: background 0.2s, color 0.2s, opacity 0.2s;
+}
+
+.book__arrow:hover {
+  background: var(--glow-2);
+  color: #fff;
+}
+
+.book__arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.book__arrow--prev {
+  left: 10px;
+}
+
+.book__arrow--next {
+  right: 10px;
+}
+
+.book > .btn {
+  justify-self: center;
+}
+
+/* How to use the site (components/GuideDialog.tsx) */
+.guide {
+  display: grid;
+  gap: 16px;
+  width: min(880px, calc(100% - 24px));
+  padding: 24px;
+}
+
+.guide h2 {
+  margin: 0;
+  padding-right: 48px;
+  font-size: clamp(21px, 3vw, 28px);
+  letter-spacing: -0.03em;
+}
+
+.guide video {
+  display: block;
+  width: 100%;
+  max-height: calc(100dvh - 210px);
+  border-radius: 16px;
+  background: #000;
+}
+
+.guide > .btn {
+  justify-self: center;
 }
 
 /* Quiz */

@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { ChatWidget } from './components/ChatWidget';
 import { CookieBanner } from './components/CookieBanner';
 import { DonateDialog } from './components/DonateDialog';
+import { GuideDialog, guideDue } from './components/GuideDialog';
 import { Header, type Page } from './components/Header';
 import { LessonDialog } from './components/LessonDialog';
 import { useT } from './i18n';
@@ -21,13 +22,14 @@ import { useVoice } from './store/voice';
 // so the home page appears quickly.
 const TranslatePage = lazy(() => import('./pages/TranslatePage').then((m) => ({ default: m.TranslatePage })));
 const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
+const KidsPage = lazy(() => import('./pages/KidsPage').then((m) => ({ default: m.KidsPage })));
 const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 // Rarely opened dialogs with long texts.
 const FeedbackDialog = lazy(() => import('./components/FeedbackDialog').then((m) => ({ default: m.FeedbackDialog })));
 const TermsDialog = lazy(() => import('./components/TermsDialog').then((m) => ({ default: m.TermsDialog })));
 
-const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'leaderboard', 'train', 'settings', 'privacy', 'login', 'register'];
+const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'kids', 'leaderboard', 'train', 'settings', 'privacy', 'login', 'register'];
 
 interface Route {
   page: Page;
@@ -73,6 +75,7 @@ function Dialogs() {
   return (
     <>
       {dialog === 'donate' && <DonateDialog onClose={closeDialog} />}
+      {dialog === 'guide' && <GuideDialog onClose={closeDialog} />}
       {lesson && <LessonDialog id={lesson} onClose={closeLesson} />}
       <Suspense fallback={null}>
         {feedback && <FeedbackDialog target={feedback} onClose={closeFeedback} />}
@@ -104,6 +107,11 @@ export function App() {
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    // First visit: how to use the site.
+    if (guideDue()) useUi.getState().openDialog('guide');
   }, []);
 
   useEffect(() => {
@@ -155,6 +163,7 @@ export function App() {
           {route.page === 'translate' && <TranslatePage />}
           {route.page === 'dictionary' && <DictionaryPage />}
           {route.page === 'learn' && <LearnPage />}
+          {route.page === 'kids' && <KidsPage />}
           {route.page === 'leaderboard' && <LeaderboardPage />}
           {route.page === 'train' && <TrainPage initialWord={route.params.get('word') ?? undefined} />}
           {route.page === 'settings' && <SettingsPage />}

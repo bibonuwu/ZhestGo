@@ -24,6 +24,9 @@ export function CookieBanner() {
         <p>
           {t('cookie.text')} <TermsLink />
         </p>
+        <p className="cookie-banner__bank">
+          <Icon name="shield" size={14} /> {t('donate.private')}
+        </p>
       </div>
       <div className="cookie-banner__actions">
         <button type="button" className="btn" onClick={() => choose('necessary')}>

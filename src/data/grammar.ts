@@ -90,7 +90,6 @@ export const GRAMMAR: Readonly<Record<string, WordGrammar>> = {
   tyndau: verb('тыңда', { object: 'acc' }),
   koru: verb('көр', { object: 'acc' }),
   karau: verb('қара', { object: 'dat' }),
-  ushu: verb('ұш', { motion: 'to' }),
   bilu: verb('біл', { object: 'acc' }),
   tusinu: verb('түсін', { object: 'acc' }),
   zhazu: verb('жаз', { object: 'dat' }),

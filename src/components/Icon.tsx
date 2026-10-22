@@ -307,6 +307,19 @@ const PATHS = {
       <path d="M4 4h13l-2 4.5L17 13H4" />
     </>
   ),
+  siren: (
+    <>
+      <path d="M7 18v-6a5 5 0 0 1 10 0v6M12 12v6" />
+      <path d="M5 21h14v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v1z" />
+      <path d="M12 2v1M2 12h1M21 12h1M4.9 4.9l.7.7M19.1 4.9l-.7.7" />
+    </>
+  ),
+  smile: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof PATHS;

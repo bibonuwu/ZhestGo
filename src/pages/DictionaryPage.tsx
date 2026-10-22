@@ -124,10 +124,12 @@ export function DictionaryPage() {
   const visible = useMemo(() => words.filter((w) => (filter === 'all' || w.category === filter) && (!q || matchesQuery(w, q))), [words, filter, q]);
   // A searched word that is not among the lessons at all (not just outside the chosen category).
   const unknownWord = q !== '' && !words.some((w) => matchesQuery(w, q));
+  const upcoming = filter !== 'all' && !counts.has(filter);
 
   const filters: Array<{ id: Filter; label: string; icon?: TopicIcon }> = [
     { id: 'all', label: t('dict.all') },
-    ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) => ({ id: c.id as Filter, label: c.label[lang], icon: c.icon })),
+    // “Emergency” is listed before its videos are recorded.
+    ...CATEGORIES.filter((c) => counts.has(c.id) || c.id === 'emergency').map((c) => ({ id: c.id as Filter, label: c.label[lang], icon: c.icon })),
   ];
 
   return (
@@ -171,7 +173,7 @@ export function DictionaryPage() {
               <p>{t('dict.notYet.sub')}</p>
             </>
           ) : (
-            <p>{t('dict.nothing')}</p>
+            <p>{t(upcoming ? 'dict.soon' : 'dict.nothing')}</p>
           )}
           <button
             type="button"

@@ -25,6 +25,22 @@ const audioCache = new Map<string, string>();
 let audio: HTMLAudioElement | null = null;
 /** Held so Chrome does not garbage-collect the utterance mid-sentence. */
 let currentUtterance: SpeechSynthesisUtterance | null = null;
+let finished: Promise<void> = Promise.resolve();
+
+/** Settles when the last speech that started has ended or was stopped. */
+export const speechFinished = (): Promise<void> => finished;
+
+function untilEnded(media: HTMLAudioElement): Promise<void> {
+  if (media.paused || media.ended) return Promise.resolve();
+  return new Promise((resolve) => {
+    const events = ['ended', 'pause', 'emptied', 'error'] as const;
+    const done = () => {
+      for (const e of events) media.removeEventListener(e, done);
+      resolve();
+    };
+    for (const e of events) media.addEventListener(e, done);
+  });
+}
 
 export function loadVoices(): Promise<SpeechSynthesisVoice[]> {
   if (!browserSpeechSupported) return Promise.resolve([]);
@@ -79,6 +95,7 @@ async function playCached(key: string, make: () => Promise<Blob>): Promise<void>
   audio ??= new Audio();
   audio.src = url;
   await audio.play();
+  finished = untilEnded(audio);
 }
 
 async function speakWithBrowser(text: string, voiceURI: string, rate: number): Promise<void> {
@@ -88,9 +105,14 @@ async function speakWithBrowser(text: string, voiceURI: string, rate: number): P
   utterance.lang = voice?.lang ?? 'kk-KZ';
   if (voice) utterance.voice = voice;
   utterance.rate = rate;
-  utterance.onend = () => {
-    if (currentUtterance === utterance) currentUtterance = null;
-  };
+  finished = new Promise((resolve) => {
+    utterance.onend = () => {
+      if (currentUtterance === utterance) currentUtterance = null;
+      resolve();
+    };
+    // Also when cancelled by the next speech.
+    utterance.onerror = () => resolve();
+  });
   currentUtterance = utterance;
   speechSynthesis.cancel();
   speechSynthesis.speak(utterance);

@@ -12,7 +12,7 @@ import type { Localized, TopicIcon } from './vocabulary';
  * Pure data: also imported by the API server (to validate progress) and by
  * the scripts.
  */
-export type SignTopicId = 'basics' | 'people' | 'time' | 'animals' | 'colors' | 'things' | 'describe' | 'actions';
+export type SignTopicId = 'basics' | 'people' | 'time' | 'animals' | 'colors' | 'things' | 'describe' | 'actions' | 'emergency';
 
 export interface Sign {
   id: string;
@@ -38,6 +38,7 @@ export const SIGN_TOPICS: ReadonlyArray<{ id: SignTopicId; label: Localized; ico
   { id: 'things', label: { kk: 'Заттар мен орындар', ru: 'Вещи и места', en: 'Things & places' }, icon: 'home' },
   { id: 'describe', label: { kk: 'Сипаттау', ru: 'Описание', en: 'Describing' }, icon: 'ruler' },
   { id: 'actions', label: { kk: 'Әрекеттер', ru: 'Действия', en: 'Actions' }, icon: 'zap' },
+  { id: 'emergency', label: { kk: 'Шұғыл көмек', ru: 'Экстренная помощь', en: 'Emergency' }, icon: 'siren' },
 ];
 
 export const SIGNS: readonly Sign[] = [
@@ -86,7 +87,8 @@ export const SIGNS: readonly Sign[] = [
   { id: 'zhyl', kk: 'жыл', ru: 'год', en: 'year', topic: 'time', source: 'C0963', wordId: 'zhyl' },
   { id: 'oku', kk: 'оқу', ru: 'читать, учиться', en: 'read, study', topic: 'actions', source: 'C0964', wordId: 'oku' },
   { id: 'zhazu', kk: 'жазу', ru: 'писать', en: 'write', topic: 'actions', source: 'C0965', wordId: 'zhazu' },
-  { id: 'ushu', kk: 'ұшу', ru: 'летать', en: 'fly', topic: 'actions', source: 'C0966', wordId: 'ushu' },
+  // The id is from when this sign was labelled “ұшу”; it stays, as saved progress and firestore.rules use it.
+  { id: 'ushu', kk: 'ішу', ru: 'пить', en: 'drink', topic: 'actions', source: 'C0966', wordId: 'ishu' },
   { id: 'uiyktau', kk: 'ұйықтау', ru: 'спать', en: 'sleep', topic: 'actions', source: 'C0967', wordId: 'uiyktau' },
   { id: 'tyndau', kk: 'тыңдау', ru: 'слушать', en: 'listen', topic: 'actions', source: 'C0968', wordId: 'tyndau' },
   { id: 'karau', kk: 'қарау', ru: 'смотреть', en: 'look, watch', topic: 'actions', source: 'C0969', wordId: 'karau' },

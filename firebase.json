@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "qoldau-ym",
+    "site": "qoldau-ai-kz",
     "public": "dist",
     "ignore": [
       "firebase.json",
@@ -45,6 +45,15 @@
       },
       {
         "source": "/landing/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000"
+          }
+        ]
+      },
+      {
+        "source": "/@(kids|guide)/**",
         "headers": [
           {
             "key": "Cache-Control",

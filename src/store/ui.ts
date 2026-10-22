@@ -7,7 +7,7 @@ export interface InstallPromptEvent extends Event {
 }
 
 /** A dialog over the page. */
-export type Dialog = 'donate';
+export type Dialog = 'donate' | 'guide';
 
 /** What a feedback message is about: the site in general, a video lesson or a spoken phrase. */
 export type FeedbackTarget = { kind: 'site' } | { kind: 'lesson'; id: string; word: string } | { kind: 'phrase'; text: string };

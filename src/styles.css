@@ -187,7 +187,8 @@ input[type='range'] {
   z-index: 20;
   height: var(--header-h);
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  /* The tabs take what is left; they never push the page wider (see site.css). */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
   padding: 0 24px;

@@ -9,6 +9,7 @@ import { useUi } from '../store/ui';
 import { Icon } from './Icon';
 import { Modal, ModalClose } from './Modal';
 import { SignCheck } from './SignCheck';
+import { Syllables } from './Syllables';
 
 const ALL_IDS = SIGNS.map((s) => s.id);
 
@@ -110,6 +111,7 @@ export function LessonDialog({ id, onClose }: { id: string; onClose: () => void 
             <h2 id="lesson-title" lang="kk">
               {capitalize(sign.kk)}
             </h2>
+            <Syllables key={sign.id} text={capitalize(sign.kk)} />
             <p className="lesson__gloss">{gloss}</p>
 
             <div className="lesson__tools">

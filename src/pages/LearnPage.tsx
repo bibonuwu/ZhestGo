@@ -208,7 +208,7 @@ export function LearnPage() {
             {t('learn.all')}
             <span className="filter__count">{SIGNS.length}</span>
           </button>
-          {SIGN_TOPICS.map((tp) => (
+          {SIGN_TOPICS.filter((tp) => SIGNS.some((s) => s.topic === tp.id)).map((tp) => (
             <button
               key={tp.id}
               type="button"

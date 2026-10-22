@@ -10,8 +10,8 @@ const DIRS: Direction[] = ['up', 'down', 'side', 'forward'];
 const LOCS: SpecLocation[] = ['head', 'face', 'chest'];
 
 describe('vocabulary', () => {
-  it('has 121 words: 100 with Qoldau gestures, 21 only as video signs', () => {
-    expect(VOCABULARY).toHaveLength(121);
+  it('has 120 words: 100 with Qoldau gestures, 20 only as video signs', () => {
+    expect(VOCABULARY).toHaveLength(120);
     expect(TEMPLATE_WORDS).toHaveLength(100);
   });
 
