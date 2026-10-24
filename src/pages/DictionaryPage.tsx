@@ -96,9 +96,6 @@ function WordCard({ word, sampleCount }: { word: WordEntry; sampleCount: number 
         <button type="button" className="btn btn--sm btn--soft" onClick={add}>
           <Icon name="plus" size={15} /> {t('dict.add')}
         </button>
-        <a className="btn btn--sm btn--ghost" href={`#/train?word=${encodeURIComponent(word.id)}`} aria-label={`${t('dict.train')}: ${word.kk}`}>
-          <Icon name="graduate" size={16} /> {t('dict.train')}
-        </a>
       </footer>
     </article>
   );

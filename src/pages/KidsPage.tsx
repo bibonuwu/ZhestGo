@@ -143,7 +143,7 @@ export function KidsPage() {
                 </span>
                 <span className="comic-card__text">
                   <strong lang="kk">{c.title}</strong>
-                  <small>{t('kids.pages', { n: c.pages.length })}</small>
+                  {c.pages.length > 0 && <small>{t('kids.pages', { n: c.pages.length })}</small>}
                 </span>
               </button>
             ))}

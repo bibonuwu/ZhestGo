@@ -1232,7 +1232,7 @@ html:has(.modal[open]) {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -1306,6 +1306,121 @@ html:has(.modal[open]) {
 
 .feature-card--plus .feature-card__go {
   color: #8ee7ff;
+}
+
+/* ── About us ───────────────────────────────────────────────────────────── */
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.about-card {
+  overflow: hidden;
+  border: 1px solid var(--l-line);
+  border-radius: 24px;
+  background: var(--l-card);
+  color: var(--l-ink);
+  box-shadow: 0 22px 55px -45px rgb(20 40 70 / 0.45);
+}
+
+/* A coloured band with the title and a large faded icon, after the logo's colours. */
+.about-card__band {
+  position: relative;
+  min-height: 116px;
+  margin: 0;
+  padding: 24px 110px 24px 26px;
+  overflow: hidden;
+  color: #fff;
+  font-size: clamp(26px, 2.4vw, 34px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.about-card__band .icon {
+  position: absolute;
+  right: -6px;
+  bottom: -14px;
+  opacity: 0.32;
+  transform: rotate(-12deg);
+}
+
+.about-card--mission .about-card__band {
+  background: linear-gradient(135deg, #e5243f, #ff7b5c);
+}
+
+.about-card--values .about-card__band {
+  background: linear-gradient(135deg, #f5b301, #ffd84d);
+  color: #3b2a00;
+}
+
+.about-card--path .about-card__band {
+  background: linear-gradient(135deg, #1d2f9e, #3f78e6);
+}
+
+.about-card p,
+.about-card ul {
+  margin: 0;
+  padding: 20px 26px 26px;
+  color: var(--l-copy);
+  line-height: 1.6;
+}
+
+.about-card ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.about-card li strong {
+  color: var(--l-ink);
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 10px 18px;
+  border: 1px solid var(--l-line);
+  border-radius: 24px;
+  background: var(--l-card);
+  color: var(--l-ink);
+  box-shadow: 0 22px 55px -45px rgb(20 40 70 / 0.45);
+}
+
+.team-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.team-card strong {
+  padding-inline: 8px;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.team-card small {
+  padding-inline: 8px;
+  color: var(--l-copy);
+  font-size: 14px;
 }
 
 /* ── Support call to action ─────────────────────────────────────────────── */
@@ -4231,8 +4346,17 @@ html:has(.modal[open]) {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .feature-grid {
+  .feature-grid,
+  .team-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-card__band {
+    min-height: 0;
   }
 
   .header .donate-pill span,
@@ -4375,6 +4499,14 @@ html:has(.modal[open]) {
 
   .feature-card {
     min-height: 0;
+  }
+
+  .team-grid {
+    gap: 10px;
+  }
+
+  .team-card strong {
+    font-size: 15px;
   }
 
   .support-cta {

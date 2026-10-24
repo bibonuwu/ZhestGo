@@ -28,9 +28,15 @@ export const comicPages = (id: string, count: number, ext = 'webp'): string[] =>
   Array.from({ length: count }, (_, i) => `kids/books/${id}/${String(i + 1).padStart(2, '0')}.${ext}`);
 
 export const CARTOONS: readonly Cartoon[] = [
-  // { id: 'aldar-kose', title: 'Алдар Көсе', video: 'kids/cartoons/aldar-kose.mp4', poster: 'kids/cartoons/aldar-kose.webp' },
+  {
+    id: 'aldar-kose-tilsiz-dos',
+    title: 'Алдар Көсе және тілсіз дос',
+    video: 'kids/cartoons/aldar-kose-tilsiz-dos.mp4',
+    poster: 'kids/cartoons/aldar-kose-tilsiz-dos.webp',
+  },
 ];
 
 export const COMICS: readonly Comic[] = [
-  // { id: 'aldar-kose', title: 'Алдар Көсе', cover: 'kids/books/aldar-kose/cover.webp', pages: comicPages('aldar-kose', 12) },
+  // A one-page comic: all nine panels are on the cover.
+  { id: 'ake-men-bala', title: 'Әке мен бала', cover: 'kids/books/ake-men-bala/cover.webp', pages: [] },
 ];

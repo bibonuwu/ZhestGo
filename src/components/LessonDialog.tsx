@@ -133,11 +133,6 @@ export function LessonDialog({ id, onClose }: { id: string; onClose: () => void 
               >
                 <Icon name="replay" size={16} />
               </button>
-              {sign.wordId && (
-                <a className="btn btn--sm btn--ghost" href={`#/train?word=${encodeURIComponent(sign.wordId)}`} onClick={onClose}>
-                  <Icon name="video" size={16} /> {t('nav.train')}
-                </a>
-              )}
             </div>
 
             <button

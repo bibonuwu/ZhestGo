@@ -7,6 +7,7 @@ import { AUTHORS } from '../data/authors';
 import { DONATE, telegramUrl } from '../data/donate';
 import { GUIDE } from '../data/guide';
 import { SIGN_BY_WORD, SIGNS, SIGNS_BY_ID } from '../data/signs';
+import { TEAM } from '../data/team';
 import { capitalize } from '../data/words';
 import { LOCALES, useT, type MessageKey } from '../i18n';
 import { publicUrl, signPoster, signVideo } from '../lib/media';
@@ -389,7 +390,6 @@ function Features() {
     { href: '#/learn', icon: 'film', title: 'nav.learn', text: 'home.f.learn', tone: 'plus' },
     { href: '#/translate', icon: 'hand', title: 'nav.translate', text: 'home.f.translate' },
     { href: '#/dictionary', icon: 'book', title: 'nav.dictionary', text: 'home.f.dictionary' },
-    { href: '#/train', icon: 'graduate', title: 'nav.train', text: 'home.f.train' },
   ];
   return (
     <section className="showcase showcase--features" aria-labelledby="home-features">
@@ -415,6 +415,66 @@ function Features() {
           </a>
         ))}
       </div>
+    </section>
+  );
+}
+
+const VALUES: Array<{ title: MessageKey; text: MessageKey }> = [
+  { title: 'about.value.access', text: 'about.value.access.text' },
+  { title: 'about.value.privacy', text: 'about.value.privacy.text' },
+  { title: 'about.value.respect', text: 'about.value.respect.text' },
+];
+
+function About() {
+  const t = useT();
+  return (
+    <section className="showcase showcase--about" aria-labelledby="home-about">
+      <div className="showcase__head">
+        <p className="eyebrow">{t('about.eyebrow')}</p>
+        <h2 id="home-about">
+          {t('about.title1')}
+          <em>{t('about.title2')}</em>
+        </h2>
+        <p>{t('about.text')}</p>
+      </div>
+      <div className="about-grid">
+        <article className="about-card about-card--mission">
+          <h3 className="about-card__band">
+            {t('about.mission.title')}
+            <Icon name="heart" size={84} />
+          </h3>
+          <p>{t('about.mission.text')}</p>
+        </article>
+        <article className="about-card about-card--values">
+          <h3 className="about-card__band">
+            {t('about.values.title')}
+            <Icon name="star" size={84} />
+          </h3>
+          <ul>
+            {VALUES.map((v) => (
+              <li key={v.title}>
+                <strong>{t(v.title)}</strong> — {t(v.text)}
+              </li>
+            ))}
+          </ul>
+        </article>
+        <article className="about-card about-card--path">
+          <h3 className="about-card__band">
+            {t('about.path.title')}
+            <Icon name="graduate" size={84} />
+          </h3>
+          <p>{t('about.path.text', { n: SIGNS.length })}</p>
+        </article>
+      </div>
+      <ul className="team-grid">
+        {TEAM.map((m) => (
+          <li key={m.photo} className="team-card">
+            <img src={publicUrl(`team/${m.photo}.jpg`)} alt={m.name} loading="lazy" width={480} height={600} />
+            <strong>{m.name}</strong>
+            <small>{t(m.role)}</small>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -454,7 +514,6 @@ export function SiteFooter() {
     { href: '#/translate', label: 'nav.translate' },
     { href: '#/dictionary', label: 'nav.dictionary' },
     { href: '#/kids', label: 'nav.kids' },
-    { href: '#/train', label: 'nav.train' },
     { href: '#/privacy', label: 'footer.privacy' },
   ];
   return (
@@ -523,6 +582,7 @@ export function HomePage() {
         <LessonsShowcase />
         <LeaderShowcase />
         <Features />
+        <About />
         <SupportCta />
         <SiteFooter />
       </main>

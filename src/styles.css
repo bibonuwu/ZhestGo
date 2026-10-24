@@ -197,6 +197,24 @@ input[type='range'] {
   border-bottom: 1px solid var(--border);
 }
 
+.logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--logo-size, 38px);
+  height: var(--logo-size, 38px);
+  padding: 9%;
+  border-radius: 30%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(16 24 40 / 0.08);
+}
+
+.logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -1574,43 +1592,7 @@ input[type='range'] {
   flex: 1 1 auto;
 }
 
-/* ── Training ───────────────────────────────────────────────────────────── */
-.train__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
-  align-items: start;
-  gap: 20px;
-}
-
-.train__stage {
-  position: sticky;
-  top: calc(var(--header-h) + 16px);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.train__stage .notice {
-  margin: 0;
-}
-
-.train__camera {
-  position: relative;
-}
-
-.train__notes {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.train__side {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Numbered steps (translate and training headers) */
+/* Numbered steps (translate header) */
 .progress-steps {
   display: flex;
   align-items: center;

@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,
-        includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+        includeAssets: ['favicon.png', 'icons/apple-touch-icon.png'],
         manifest: {
           name: 'Qoldau — ым тілінен қазақ сөзіне',
           short_name: 'Qoldau',

@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import { LANGS } from '../data/gestureText';
 import { SIGNS } from '../data/signs';
 import { LANG_NAMES, LANG_SHORT, useT, type MessageKey } from '../i18n';
 import { CloudError } from '../lib/cloud';
+import { publicUrl } from '../lib/media';
 import { useAuth } from '../store/auth';
 import { useSettings } from '../store/settings';
 import { useServerStatus } from '../store/status';
@@ -17,7 +18,6 @@ export type Page =
   | 'learn'
   | 'kids'
   | 'leaderboard'
-  | 'train'
   | 'settings'
   | 'privacy'
   | 'login'
@@ -29,28 +29,15 @@ const TABS: Array<{ id: Page; label: MessageKey; icon: IconName }> = [
   { id: 'learn', label: 'nav.learn', icon: 'film' },
   { id: 'kids', label: 'nav.kids', icon: 'smile' },
   { id: 'leaderboard', label: 'nav.leaderboard', icon: 'trophy' },
-  { id: 'train', label: 'nav.train', icon: 'graduate' },
   { id: 'settings', label: 'nav.settings', icon: 'sliders' },
 ];
 
+/** The two hands on a white tile, so they read on the video and in the dark theme too. */
 export function Logo({ size = 38 }: { size?: number }) {
-  // useId contains characters that url(#…) does not accept.
-  const gradient = `logo${useId().replace(/[^\w-]/g, '')}`;
   return (
-    <svg className="logo" width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
-      <defs>
-        <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#61d4ff" />
-          <stop offset="1" stopColor="#1f6fff" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="12" fill={`url(#${gradient})`} />
-      <circle cx="29" cy="11" r="5" fill="#ffb547" />
-      <path d="M9 17.5a7.5 7.5 0 0 1 7.5-7.5h3a7.5 7.5 0 0 1 0 15H16l-4.5 4v-4.6A7.5 7.5 0 0 1 9 17.5z" fill="#fff" />
-      <circle cx="14.5" cy="17.5" r="1.6" fill="#1f6fff" />
-      <circle cx="18.5" cy="17.5" r="1.6" fill="#1f6fff" />
-      <circle cx="22.5" cy="17.5" r="1.6" fill="#1f6fff" />
-    </svg>
+    <span className="logo" style={{ '--logo-size': `${size}px` } as CSSProperties} aria-hidden="true">
+      <img src={publicUrl('logo.png')} alt="" width={173} height={96} />
+    </span>
   );
 }
 

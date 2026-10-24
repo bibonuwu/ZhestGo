@@ -23,13 +23,12 @@ import { useVoice } from './store/voice';
 const TranslatePage = lazy(() => import('./pages/TranslatePage').then((m) => ({ default: m.TranslatePage })));
 const DictionaryPage = lazy(() => import('./pages/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
 const KidsPage = lazy(() => import('./pages/KidsPage').then((m) => ({ default: m.KidsPage })));
-const TrainPage = lazy(() => import('./pages/TrainPage').then((m) => ({ default: m.TrainPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 // Rarely opened dialogs with long texts.
 const FeedbackDialog = lazy(() => import('./components/FeedbackDialog').then((m) => ({ default: m.FeedbackDialog })));
 const TermsDialog = lazy(() => import('./components/TermsDialog').then((m) => ({ default: m.TermsDialog })));
 
-const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'kids', 'leaderboard', 'train', 'settings', 'privacy', 'login', 'register'];
+const PAGES: readonly Page[] = ['home', 'translate', 'dictionary', 'learn', 'kids', 'leaderboard', 'settings', 'privacy', 'login', 'register'];
 
 interface Route {
   page: Page;
@@ -165,7 +164,6 @@ export function App() {
           {route.page === 'learn' && <LearnPage />}
           {route.page === 'kids' && <KidsPage />}
           {route.page === 'leaderboard' && <LeaderboardPage />}
-          {route.page === 'train' && <TrainPage initialWord={route.params.get('word') ?? undefined} />}
           {route.page === 'settings' && <SettingsPage />}
           {route.page === 'privacy' && <PrivacyPage />}
         </Suspense>
